@@ -331,7 +331,11 @@
       var data=new FormData(modalForm),obj=Object.assign({},row);
       schemas[kind].forEach(function(f){
         var v=data.get(f[0]);
-        obj[f[0]]=f[2]==='number'?safeNumber(v):String(v||'').trim();
+        if(kind==='locations' && (f[0]==='x'||f[0]==='y') && (v==null||String(v).trim()==='')){
+          obj[f[0]]=null;
+        }else{
+          obj[f[0]]=f[2]==='number'?safeNumber(v):String(v||'').trim();
+        }
       });
       if(kind==='links' && (!obj.from||!obj.to||obj.from===obj.to)){
         context.toast('Escolha dois registros diferentes para a conexão.',true);return;
@@ -420,9 +424,19 @@
     });
     map=L.map('rp-map-canvas',{crs:crs,zoomControl:true,minZoom:1,maxZoom:6,preferCanvas:true,attributionControl:true});
     var bounds=L.latLngBounds(map.unproject([0,8192],5),map.unproject([8192,0],5));
-    L.tileLayer('https://cdn.fivedock.dev/o/fivedock/maps/styleatlas/{z}/{x}/{y}.jpg',{
-      tileSize:256,minZoom:0,maxZoom:6,maxNativeZoom:5,bounds:bounds,attribution:'Mapa © Rockstar Games | tiles FiveDock'
-    }).addTo(map);
+    var tileOpts={tileSize:256,minZoom:0,maxZoom:6,maxNativeZoom:5,bounds:bounds,attribution:'Mapa © Rockstar Games | tiles FiveDock'};
+    var tileLayer=L.tileLayer('https://cdn.fivedock.dev/o/fivedock/maps/styleatlas/{z}/{x}/{y}.jpg',tileOpts).addTo(map);
+    var failures=0,switched=false;
+    tileLayer.on('tileerror',function(){
+      failures++;
+      if(failures>=3&&!switched){
+        switched=true;
+        if(map){
+          map.removeLayer(tileLayer);
+          tileLayer=L.tileLayer('https://assets.fivedock.dev/maps/styleatlas/{z}/{x}/{y}.jpg',tileOpts).addTo(map);
+        }
+      }
+    });
     map.setMaxBounds(bounds.pad(.12));
     map.setView([0,0],3);
     list('locations').forEach(function(loc){

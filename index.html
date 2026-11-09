@@ -532,6 +532,45 @@ function canPermanentDelete(){ return canManageUsers(); }
 /* ============ ARMAZENAMENTO POR NAVEGADOR ============ */
 const LOCAL_DB_KEY = 'bi_offline_db_v2';
 const LEGACY_CACHE_KEY = 'bi_local_cache_v1';
+const ACTIVE_SESSION_KEY = 'mafiacorp_active_user_v1';
+const LAST_VIEW_KEY = 'mafiacorp_last_view_v1';
+let clockInterval = null;
+function rememberLocalSession(user){
+  try{localStorage.setItem(ACTIVE_SESSION_KEY,JSON.stringify({id:user.id,since:nowIso()}));return true;}
+  catch(err){console.warn('Falha ao salvar sessão no navegador',err);return false;}
+}
+function forgetLocalSession(){
+  try{localStorage.removeItem(ACTIVE_SESSION_KEY);localStorage.removeItem(LAST_VIEW_KEY);}
+  catch(err){console.warn('Falha ao limpar a sessão',err);}
+}
+function restoreLocalSession(){
+  let saved=null;
+  try{saved=JSON.parse(localStorage.getItem(ACTIVE_SESSION_KEY)||'null');}catch(err){console.warn('Sessão inválida',err);}
+  if(!saved || typeof saved.id!=='string' || !DB || !Array.isArray(DB.users)) return null;
+  const user=DB.users.find(u=>u.id===saved.id && typeof u.passwordHash==='string' && u.passwordHash.length===64);
+  if(!user){forgetLocalSession();return null;}
+  return user;
+}
+function restoredView(){
+  try{
+    const item=JSON.parse(localStorage.getItem(LAST_VIEW_KEY)||'null');
+    if(!item || typeof item.view!=='string' || !Object.prototype.hasOwnProperty.call(VIEW_LABELS,item.view))return null;
+    const params=item.params && typeof item.params==='object' && !Array.isArray(item.params)?item.params:{};
+    if(item.view==='investigation-detail' && !DB.investigations.some(x=>x.id===params.id))return null;
+    if(item.view==='suspect-detail' && !DB.suspects.some(x=>x.id===params.id))return null;
+    return {view:item.view,params};
+  }catch(err){return null;}
+}
+function showSignedIn(user,restore){
+  CURRENT_USER=user;
+  user.status='ONLINE';
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  const previous=restore?restoredView():null;
+  navigate(previous?previous.view:'dashboard',previous?previous.params:{});
+  tickClock();
+  if(clockInterval===null)clockInterval=setInterval(tickClock,1000);
+}
 async function loadDB(){
   for(const key of [LOCAL_DB_KEY,LEGACY_CACHE_KEY]){
     try {

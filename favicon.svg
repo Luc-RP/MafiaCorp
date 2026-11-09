@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72" role="img" aria-label="MafiaCorp">
+<defs><linearGradient id="steel" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#fafafa"/><stop offset=".48" stop-color="#7b818b"/><stop offset="1" stop-color="#d3d7dd"/></linearGradient></defs>
+<path d="M32 2 60 12 56 50 32 69 8 50 4 12Z" fill="#0e1012" stroke="url(#steel)" stroke-width="3"/>
+<path d="M32 9 53 16 50 46 32 61 14 46 11 16Z" fill="none" stroke="#777e87" stroke-width="1.5"/>
+<path d="M18 43V28l7 8 7-8v15M46 28H37v15h9" fill="none" stroke="url(#steel)" stroke-linecap="square" stroke-linejoin="miter" stroke-width="4"/>
+</svg>

@@ -798,6 +798,7 @@ function renderSidebar(){
 function navigate(view, params){
   CURRENT_VIEW = view;
   CURRENT_PARAMS = params||{};
+  if(CURRENT_USER){try{localStorage.setItem(LAST_VIEW_KEY,JSON.stringify({view:CURRENT_VIEW,params:CURRENT_PARAMS}));}catch(err){console.warn(err);}}
   DOSSIE_TAB = 'overview';
   BULK_SELECT_MODE = {};
   document.getElementById('crumb').innerHTML = `MAFIACORP <span style="color:var(--grey-400)">//</span> <b>${VIEW_LABELS[view]||view.toUpperCase()}</b>`;
@@ -2370,10 +2371,8 @@ async function handleLogin(ev){
     logAudit('Efetuou login no sistema.');
     logTimeline(`${(user.codename||user.name)} entrou no sistema.`);
     await saveDB();
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    navigate('dashboard');
-    tickClock(); setInterval(tickClock, 1000);
+    rememberLocalSession(user);
+    showSignedIn(user,false);
   }catch(e){
     console.error(e);
     errEl.textContent = 'Erro ao autenticar. Tente novamente.';
@@ -2435,6 +2434,8 @@ async function init(){
   wireGlobal();
   const found = await loadDB();
   if(!found) await seedDB();
+  const sessionUser=restoreLocalSession();
+  if(sessionUser){showSignedIn(sessionUser,true);return;}
   prepareLogin();
 }
 init();

@@ -151,7 +151,7 @@
       return '<div class="rp-faction-row"><span class="rp-skull">♜</span><div><b>'+e(f.name)+'</b><small>'+e(f.status||f.riskLevel||'Facção de RP')+'</small></div></div>';
     }).join('')||'<div class="rp-muted" style="padding:12px">As facções cadastradas no módulo de Inteligência aparecerão aqui.</div>';
     return '<section class="rp-dashboard">'+
-      '<div class="rp-hero"><div><span class="rp-eyebrow">CENTRAL DA FAMÍLIA · LOS SANTOS RP</span><h1>Boa noite, Chefe.</h1><p>Painel de informações, equipe e operações da organização.</p></div><div class="rp-hero-stamp">M / C<br><small>ROLEPLAY</small></div></div>'+
+      '<div class="rp-hero"><div><span class="rp-eyebrow">CENTRAL DA FAMÍLIA · LOS SANTOS RP</span><h1>'+ (new Date().getHours()<12?'Bom dia':new Date().getHours()<18?'Boa tarde':'Boa noite') +', Chefe.</h1><p>Painel de informações, equipe e operações da organização.</p></div><div class="rp-hero-stamp">M / C<br><small>ROLEPLAY</small></div></div>'+
       '<div class="rp-kpis">'+
         '<div class="rp-kpi"><span>♟ MEMBROS</span><strong>'+ms.length+'</strong><small>Personagens cadastrados</small></div>'+
         '<div class="rp-kpi"><span>◎ MISSÕES ATIVAS</span><strong>'+going.length+'</strong><small>'+mi.length+' missões no painel</small></div>'+

@@ -449,3 +449,17 @@ tbody tr:hover{background:#1b1d21;}
   .rp-map-foot{gap:5px;line-height:1.8;}
   .login-box{width:96vw;margin:10px;padding:28px 18px;}
 }
+
+
+/* Refinamento de prata nas marcações, nós e painéis */
+.mc-map-pin .plate{position:relative;}
+.rp-graph stop:first-child{stop-color:#262a30;}
+.rp-graph stop:last-child{stop-color:#090a0d;}
+.rp-graph line{stroke:#858d99;stroke-width:1.8;}
+.rp-graph-node circle{fill:#15181c;}
+.rp-network-panel .rp-graph-hint{color:#b7bdc6;border-top:1px solid #3a3f47;}
+.rp-link-line>span{color:#c6cbd3;}
+.rp-profile .rp-tag{max-width:100%;white-space:normal;}
+.rp-hero-stamp{letter-spacing:.12em;}
+.rp-map-canvas .leaflet-control-zoom a{color:#eaedf1!important;background:#22262c!important;border-color:#555d68!important;}
+.rp-map-canvas .leaflet-control-zoom a:hover{background:#444b55!important;}

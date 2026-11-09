@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BLACK INVESTIGATION</title>
+<title>MafiaCorp | Central da Família</title>
+<link rel="stylesheet" href="/mafia-center.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -409,7 +410,7 @@ tbody tr:last-child td{border-bottom:none;}
   <div class="login-box">
     <div class="login-brand">
       <div class="mark"><span>BI</span></div>
-      <h1>BLACK INVESTIGATION</h1>
+      <h1>MAFIACORP</h1>
       <div class="sub">Intelligence System</div>
     </div>
     <div class="login-restricted">⚠ ACESSO RESTRITO</div>
@@ -430,7 +431,7 @@ tbody tr:last-child td{border-bottom:none;}
     <aside class="sidebar" id="sidebar">
       <div class="sb-brand">
         <div class="mark"><span>BI</span></div>
-        <div class="sb-brand-text"><div class="name">BLACK INVESTIGATION</div><div class="tag">INTELLIGENCE SYS</div></div>
+        <div class="sb-brand-text"><div class="name">MAFIACORP</div><div class="tag">ROLEPLAY / INTELLIGENCE</div></div>
       </div>
       <nav class="sb-nav" id="sb-nav"></nav>
       <div class="sb-foot">
@@ -462,6 +463,7 @@ tbody tr:last-child td{border-bottom:none;}
 </div>
 <div class="toast-stack" id="toast-stack"></div>
 
+<script src="/mafia-center.js"></script>
 <script>
 (function(){
 "use strict";
@@ -564,7 +566,7 @@ async function seedDB(){
     evidence:[], operations:[], reports:[], notes:[], timeline:[], audit:[], attachments:[], factions:[],
     seq:{ inv:0, evd:0 },
   };
-  seedDemoData();
+  // Nova instalação não pré-carrega exemplos fictícios.
   await saveDB();
 }
 
@@ -710,8 +712,15 @@ function badge(status){ return `<span class="badge ${statusBadgeClass(status)}">
 
 /* ============ NAV CONFIG ============ */
 const NAV = [
-  {group:'GERAL', items:[
-    {id:'dashboard', label:'Dashboard', icon:'◆'},
+  {group:'CENTRAL DA FAMÍLIA', items:[
+    {id:'dashboard', label:'Central operacional', icon:'◈'},
+    {id:'rp-members', label:'Membros da máfia', icon:'♟'},
+    {id:'rp-missions', label:'Missões e contratos', icon:'◎'},
+    {id:'rp-goals', label:'Metas', icon:'▥'},
+    {id:'rp-map', label:'Mapa de Los Santos', icon:'⌖'},
+    {id:'rp-locations', label:'QGs e locais', icon:'⚑'},
+    {id:'rp-network', label:'Mapa de conexões', icon:'◇'},
+    {id:'rp-backup', label:'Backup RP', icon:'▣'},
   ]},
   {group:'INVESTIGAÇÃO', items:[
     {id:'investigations', label:'Investigações', icon:'▣'},
@@ -725,13 +734,13 @@ const NAV = [
     {id:'operations', label:'Operações', icon:'⚑'},
   ]},
   {group:'GESTÃO', items:[
-    {id:'team', label:'Equipe', icon:'☰'},
+    {id:'team', label:'Usuários do painel', icon:'☰'},
     {id:'reports', label:'Relatórios', icon:'▦'},
-    {id:'connections', label:'Connection Map', icon:'⬡'},
+    {id:'connections', label:'Conexões investigados', icon:'⬡'},
     {id:'audit', label:'Auditoria', icon:'◈'},
   ]},
 ];
-const VIEW_LABELS = {dashboard:'COMMAND CENTER', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
+const VIEW_LABELS = {'rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
 
 function renderSidebar(){
   const nav = document.getElementById('sb-nav');
@@ -752,7 +761,7 @@ function navigate(view, params){
   CURRENT_PARAMS = params||{};
   DOSSIE_TAB = 'overview';
   BULK_SELECT_MODE = {};
-  document.getElementById('crumb').innerHTML = `BLACK INVESTIGATION <span style="color:var(--grey-400)">//</span> <b>${VIEW_LABELS[view]||view.toUpperCase()}</b>`;
+  document.getElementById('crumb').innerHTML = `MAFIACORP <span style="color:var(--grey-400)">//</span> <b>${VIEW_LABELS[view]||view.toUpperCase()}</b>`;
   renderSidebar();
   renderView();
   document.getElementById('view').scrollTop = 0;
@@ -767,6 +776,12 @@ function tickClock(){
 /* ============ RENDER ROUTER ============ */
 function renderView(){
   const v = document.getElementById('view');
+  if(window.MafiaCenter && ['dashboard','rp-members','rp-missions','rp-goals','rp-map','rp-locations','rp-network','rp-backup'].includes(CURRENT_VIEW)){
+    const rpContext={db:DB,canEdit:!!canEdit(),saveDB:saveDB,navigate:navigate,renderView:renderView,openModal:openModal,closeModal:closeModal,toast:toast};
+    v.innerHTML=window.MafiaCenter.render(CURRENT_VIEW,DB,rpContext);
+    window.MafiaCenter.wire(CURRENT_VIEW,rpContext);
+    return;
+  }
   switch(CURRENT_VIEW){
     case 'dashboard': v.innerHTML = renderDashboard(); wireDashboard(); break;
     case 'investigations': v.innerHTML = renderInvestigationsList(); wireGenericList('investigations'); break;
@@ -806,7 +821,7 @@ function renderDashboard(){
   return `
   <div class="view-head">
     <div>
-      <div class="view-title">BLACK INVESTIGATION <span class="n">// COMMAND CENTER</span></div>
+      <div class="view-title">MAFIACORP <span class="n">// COMMAND CENTER</span></div>
       <div class="view-sub">Visão geral operacional — atualizado em tempo real</div>
     </div>
   </div>

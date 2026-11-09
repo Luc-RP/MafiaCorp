@@ -1,5 +1,21 @@
 # MafiaCorp | Central da Família (FiveM / GTA RP)
 
+## Atualização de 09/11/2026: sessão e tema Obsidian / Silver
+
+- O login local agora persiste após **F5, fechamento da aba e reabertura do navegador**, enquanto o armazenamento do site continuar disponível.
+- A sessão é registrada em `localStorage` como `mafiacorp_active_user_v1` contendo o ID da conta local, sem salvar a senha em texto simples nessa chave.
+- A aba atual também é restaurada a partir de `mafiacorp_last_view_v1`. A sessão e a aba são apagadas ao clicar em **Encerrar sessão**.
+- O encerramento em uma aba comunica o logout às demais abas abertas no mesmo navegador.
+- A autenticação continua **exclusivamente local**: isso não equivale a segurança de servidor, não implementa sincronização nem controla acesso real aos registros de outros usuários.
+- Identidade visual convertida para **Obsidian / Brushed Silver**: preto, grafite, aço escovado, tipografia editorial noir, monograma em brasão e contraste claro nos elementos.
+- Biblioteca de ícones SVG locais em `mafia-icons.js`; navegação com pictogramas consistentes e sem dependências externas.
+- Marcadores Leaflet com símbolos por categoria: sede da família, QG rival, garagem, galpão, casa, território e ponto de encontro.
+- `favicon.svg` contém o brasão MC em prata.
+- Testes automatizados locais por simulação: login → recarregar mantendo sessão e aba → logout → recarregar pedindo login; geração de quatro pinos de mapa e círculo de território.
+
+**Limitações:** Uma atualização com formulário ainda não salvo pode perder apenas os campos não gravados, mas não a conta autenticada. O armazenamento em modo anônimo/privado pode ser temporário. Para navegação entre diferentes usuários ou computadores e autenticação segura é necessário um backend, que não faz parte desta versão.
+
+
 Central de informações de uma organização **fictícia de roleplay**, construída sobre o Black Investigation original e publicada no [Vercel](https://mafiacorp.vercel.app).
 
 ## Central operacional
@@ -48,7 +64,9 @@ O painel usa coordenadas inseridas pelo usuário; não tem comunicação com o s
 
 - `index.html`: sistema legado e ligação com a Central
 - `mafia-center.js`: cadastros, metas, missões, grafo de relações, mapa, formulários e backups da Central RP
-- `mafia-center.css`: identidade visual dark crimson e adaptação responsiva
+- `mafia-icons.js`: ícones SVG locais para navegação e marcações
+- `favicon.svg`: brasão da identidade MafiaCorp
+- `mafia-center.css`: identidade visual Obsidian / Silver e adaptação responsiva
 - `vercel.json`: cabeçalhos de segurança, CSP para fontes e tiles do mapa
 
 ## Validação

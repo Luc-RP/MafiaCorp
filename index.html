@@ -399,9 +399,7 @@ tbody tr:last-child td{border-bottom:none;}
   .mobile-menu-btn{display:flex!important;}
 }
 .mobile-menu-btn{display:none;background:none;border:1px solid var(--line);color:var(--grey-100);width:32px;height:32px;border-radius:3px;align-items:center;justify-content:center;}
-#btn-logout{display:none!important} .login-restricted{display:none} 
 </style>
-<script src="/supabase-status.js" defer></script>
 </head>
 <body>
 
@@ -423,7 +421,7 @@ tbody tr:last-child td{border-bottom:none;}
       <div class="field"><label>Senha</label><input type="password" id="login-pass" name="bi_access_key_x7" autocomplete="new-password" spellcheck="false" data-lpignore="true" data-1p-ignore required></div>
       <button type="submit" class="btn btn-primary" id="login-btn">Autenticar</button>
     </form>
-    <div class="login-footnote">Todas as atividades realizadas neste sistema são registradas.<br>Dados armazenados de forma persistente e compartilhada com a equipe.</div>
+    <div class="login-footnote">Cada navegador mantém seu próprio banco de dados local. Não há sincronização entre pessoas ou dispositivos.<br>Esta senha é local e não oferece proteção de servidor. Evite informações sigilosas.</div>
   </div>
 </div>
 
@@ -454,8 +452,7 @@ tbody tr:last-child td{border-bottom:none;}
         </div>
         <div class="clock" id="clock"></div>
       </div>
-      <div id="bi-demo-warning" role="status" style="background:#22100e;border-bottom:1px solid #85413b;color:#efb0aa;padding:10px 22px;font:11px/1.5 var(--font-mono)"><strong>DEMONSTRAÇÃO PÚBLICA • SOMENTE LEITURA</strong> &nbsp; Registros fictícios. A conexão autenticada ao Supabase será habilitada após a correção das permissões do banco.</div>
-      <div class="view" id="view"></div>
+      <div role="status" style="padding:9px 22px;background:#1b1110;color:#dfaaa5;border-bottom:1px solid #452321;font:11px/1.5 var(--font-mono)">● MODO LOCAL · Cadastros e anexos ficam neste navegador, sem servidor ou sincronização.</div><div class="view" id="view"></div>
     </div>
   </div>
 </div>
@@ -478,14 +475,7 @@ const ROLES = {
 };
 const STORAGE_KEY = 'bi_core_db_v1';
 
-/* ============ SUPABASE CONFIG ============ */
-/* Preencha com os dados do SEU projeto Supabase (Project Settings > API). */
-const SUPABASE_URL = ''; // Integracao remota nao ativada nesta demonstracao.
-const SUPABASE_ANON_KEY = ''; // Nunca expor banco sem RLS e Auth.
-const ATTACHMENTS_BUCKET = 'attachments';
-const sb = null; // Dados de demonstracao; conexao real requer RLS/Auth no Supabase.
-
-
+/* Aplicação totalmente local */
 const ENUM = {
   invStatus:['ATIVA','EM ANÁLISE','SUSPENSA','CONCLUÍDA','ARQUIVADA'],
   priority:['BAIXA','MÉDIA','ALTA','CRÍTICA'],
@@ -537,12 +527,35 @@ function canManageUsers(){ return CURRENT_USER && CURRENT_USER.role==='admin'; }
 function canArchive(){ return canEdit(); }
 function canPermanentDelete(){ return canManageUsers(); }
 
-/* ============ PERSISTENCE (DEMO PUBLICA SEM DADOS REAIS) ============ */
-async function loadDB(){ return false; }
-async function saveDB(){ return; } // Nenhuma gravação externa ou local nesta demonstração.
+/* ============ ARMAZENAMENTO POR NAVEGADOR ============ */
+const LOCAL_DB_KEY = 'bi_offline_db_v2';
+const LEGACY_CACHE_KEY = 'bi_local_cache_v1';
+async function loadDB(){
+  for(const key of [LOCAL_DB_KEY,LEGACY_CACHE_KEY]){
+    try {
+      const raw=localStorage.getItem(key);
+      if(!raw) continue;
+      const candidate=JSON.parse(raw);
+      if(!candidate || !Array.isArray(candidate.users) || !Array.isArray(candidate.investigations)) continue;
+      DB=candidate;
+      for(const type of ['investigations','suspects','vehicles','addresses','contacts','associates','factions','evidence','operations','reports','notes','timeline','audit','attachments'])
+        if(!Array.isArray(DB[type])) DB[type]=[];
+      DB.seq=DB.seq||{inv:DB.investigations.length,evd:DB.evidence.length};
+      const oldAdmin=DB.users.find(u=>u.username==='admin');
+      if(oldAdmin&&!DB.users.some(u=>u.username==='root_bi')) oldAdmin.username='root_bi';
+      if(key!==LOCAL_DB_KEY) await saveDB();
+      return true;
+    } catch(e){console.warn('Erro ao ler base local',e);}
+  }
+  return false;
+}
+async function saveDB(){
+  try{localStorage.setItem(LOCAL_DB_KEY,JSON.stringify(DB));return true;}
+  catch(e){console.error(e);toast('Não foi possível salvar. Armazenamento do navegador cheio ou bloqueado.',true);return false;}
+}
 /* ============ SEED DATA ============ */
 async function seedDB(){
-  const passHash = null; // Nao publicar credenciais de acesso
+  const passHash = null; // Primeiro acesso configura senha local; não existe senha compartilhada
   DB = {
     users:[
       {id:'u_admin', username:'root_bi', passwordHash:passHash, name:'Administrador do Sistema', codename:'ROOT', role:'admin', specialty:'Administração de Sistema', contact:'', status:'ONLINE', lastAccess:nowIso(), createdAt:nowIso()},
@@ -1785,49 +1798,48 @@ function dataURLtoBlob(dataUrl){
   for(let i=0;i<raw.length;i++) bytes[i] = raw.charCodeAt(i);
   return new Blob([bytes], {type: mime});
 }
-async function addAttachmentFiles(ownerType, ownerId, investigationId, fileList){
-  if(!sb){ toast('Supabase não configurado. Edite SUPABASE_URL e SUPABASE_ANON_KEY no código.', true); return 0; }
-  const files = Array.from(fileList||[]);
-  if(!files.length) return 0;
-  let added = 0;
+function openLocalFilesDB(){
+  return new Promise((resolve,reject)=>{
+    if(!window.indexedDB) return reject(new Error('IndexedDB indisponível'));
+    const rq=indexedDB.open('bi_local_attachments_v1',1);
+    rq.onupgradeneeded=()=>rq.result.createObjectStore('files');
+    rq.onsuccess=()=>resolve(rq.result);
+    rq.onerror=()=>reject(rq.error||new Error('Falha no IndexedDB'));
+  });
+}
+async function localAttachment(operation,key,blob){
+  const db=await openLocalFilesDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction('files',operation==='get'?'readonly':'readwrite');
+    let value=null;
+    const store=tx.objectStore('files');
+    const req=operation==='get'?store.get(key):operation==='delete'?store.delete(key):store.put(blob,key);
+    req.onsuccess=()=>value=req.result;
+    tx.oncomplete=()=>{db.close();resolve(value)};
+    tx.onerror=()=>{db.close();reject(tx.error||new Error('Falha ao salvar anexo'))};
+    tx.onabort=()=>{db.close();reject(tx.error||new Error('Gravação interrompida'))};
+  });
+}
+async function addAttachmentFiles(ownerType,ownerId,investigationId,fileList){
+  const files=Array.from(fileList||[]);
+  let added=0;
   for(const file of files){
     try{
-      let dataUrl = await fileToDataURL(file);
-      const mime = file.type || 'application/octet-stream';
-      if(mime.startsWith('image/')){
-        try{ dataUrl = await resizeImageDataUrl(dataUrl, 1600, 0.82); }catch(e){ console.warn('resize failed, using original', e); }
-      }
-      const approxBytes = Math.round(dataUrl.length*0.75);
-      if(approxBytes > MAX_ATTACHMENT_BYTES){
-        toast(`"${file.name}" excede o limite de ${formatBytes(MAX_ATTACHMENT_BYTES)} e não foi anexado.`, true);
-        continue;
-      }
-      let blob;
-      try{ blob = dataURLtoBlob(dataUrl); }
-      catch(convErr){ console.error('dataURL->blob failed', convErr); toast(`Não foi possível preparar "${file.name}" para envio.`, true); continue; }
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,'_') || 'arquivo';
-      const storageKey = ownerType+'/'+ownerId+'/'+uid()+'_'+safeName;
-      let upErr;
-      try{
-        const res = await sb.storage.from(ATTACHMENTS_BUCKET).upload(storageKey, blob, { contentType: mime, upsert: true });
-        upErr = res.error;
-      }catch(netErr){ upErr = netErr; }
-      if(upErr){
-        console.error(upErr);
-        toast(`Falha ao salvar "${file.name}": ${upErr.message||upErr.error||'erro no Supabase Storage'}.`, true);
-        continue;
-      }
-      DB.attachments.push({
-        id: uid(), ownerType, ownerId, investigationId: investigationId||null,
-        name: file.name, mime, kind: attachmentKind(mime), size: approxBytes,
-        storageKey, uploadedAt: nowIso(), uploadedBy: CURRENT_USER?(CURRENT_USER.codename||CURRENT_USER.name):'—'
-      });
+      const mime=file.type||'application/octet-stream';
+      let blob=file;
+      if(mime.startsWith('image/')) blob=dataURLtoBlob(await resizeImageDataUrl(await fileToDataURL(file),1600,.82));
+      if(blob.size>MAX_ATTACHMENT_BYTES){toast('Arquivo muito grande: '+file.name,true);continue;}
+      const key=ownerType+'/'+ownerId+'/'+uid();
+      await localAttachment('put',key,blob);
+      DB.attachments.push({id:uid(),ownerType,ownerId,investigationId:investigationId||null,
+        name:file.name,mime:blob.type||mime,kind:attachmentKind(mime),size:blob.size,
+        storageKey:key,uploadedAt:nowIso(),uploadedBy:CURRENT_USER?(CURRENT_USER.codename||CURRENT_USER.name):'LOCAL'});
       added++;
-    }catch(e){ console.error(e); toast(`Erro ao processar "${file.name}": ${e.message||e}`, true); }
+    }catch(e){console.error(e);toast('Falha ao anexar "'+file.name+'": '+(e.message||e),true);}
   }
   if(added){
-    logAudit('Anexou arquivo(s)', added+' arquivo(s)');
-    logTimeline(`${(CURRENT_USER.codename||CURRENT_USER.name)} anexou ${added} arquivo(s).`, investigationId?'investigation':null, investigationId||null);
+    logAudit('Anexou arquivo(s)',added+' arquivo(s)');
+    logTimeline((CURRENT_USER.codename||CURRENT_USER.name)+' anexou '+added+' arquivo(s).',investigationId?'investigation':null,investigationId||null);
     await saveDB();
   }
   return added;
@@ -1891,7 +1903,7 @@ function refreshAttachmentsGrid(panel, ownerType, ownerId, skipRebuild){
       const a = DB.attachments.find(x=>x.id===b.dataset.attDel);
       if(!a) return;
       if(!confirm('Remover este anexo definitivamente?')) return;
-      try{ if(sb) await sb.storage.from(ATTACHMENTS_BUCKET).remove([a.storageKey]); }catch(e){ /* ignore */ }
+      try{await localAttachment('delete',a.storageKey)}catch(e){console.warn(e)}
       DB.attachments = DB.attachments.filter(x=>x.id!==a.id);
       logAudit('Removeu anexo', a.name);
       await saveDB();
@@ -1902,26 +1914,27 @@ function refreshAttachmentsGrid(panel, ownerType, ownerId, skipRebuild){
   grid.querySelectorAll('[data-att-thumb]').forEach(el=>loadAttachmentThumb(el));
 }
 async function loadAttachmentThumb(el){
-  const mime = el.dataset.attMime||'';
-  const key = el.dataset.attStorage;
-  if(!sb){ el.innerHTML = '<div class="att-loading">SUPABASE NÃO CONFIGURADO</div>'; return; }
+  const mime=el.dataset.attMime||'';
   try{
-    const { data, error } = await sb.storage.from(ATTACHMENTS_BUCKET).createSignedUrl(key, 3600);
-    if(error || !data || !data.signedUrl){ el.innerHTML = '<div class="att-loading">INDISPONÍVEL</div>'; return; }
-    const url = data.signedUrl;
+    const blob=await localAttachment('get',el.dataset.attStorage);
+    if(!blob){el.innerHTML='<div class="att-loading">ARQUIVO NÃO DISPONÍVEL NESTE NAVEGADOR</div>';return;}
+    const url=URL.createObjectURL(blob);
     if(mime.startsWith('image/')){
-      el.innerHTML = `<img src="${url}" alt="">`;
-      el.style.cursor = 'pointer';
-      el.addEventListener('click', ()=>{
-        openModal(`<div class="modal-head"><h3>Visualização</h3><button class="modal-close" data-close>×</button></div><div class="modal-body" style="text-align:center;"><img src="${url}" style="max-width:100%;max-height:70vh;border-radius:var(--radius);"></div>`);
-        document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeModal));
+      const img=document.createElement('img');img.src=url;img.alt='Anexo';el.replaceChildren(img);
+      el.style.cursor='pointer';
+      el.addEventListener('click',()=>{
+        openModal('<div class="modal-head"><h3>Imagem</h3><button class="modal-close" data-close>×</button></div><div class="modal-body" id="preview-attachment" style="text-align:center"></div>');
+        const full=document.createElement('img');full.src=url;full.style.cssText='max-width:100%;max-height:70vh';
+        document.getElementById('preview-attachment').appendChild(full);
+        document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeModal));
       });
-    } else if(mime.startsWith('video/')){
-      el.innerHTML = `<video src="${url}" controls></video>`;
-    } else {
-      el.innerHTML = `<div class="att-doc">📄</div>`;
+    }else if(mime.startsWith('video/')){
+      const video=document.createElement('video');video.src=url;video.controls=true;el.replaceChildren(video);
+    }else{
+      const link=document.createElement('a');link.href=url;link.download='anexo';link.textContent='📄 BAIXAR ANEXO';
+      link.style.cssText='color:var(--ice);font-size:10px;padding:8px';el.replaceChildren(link);
     }
-  }catch(e){ el.innerHTML = '<div class="att-loading">ERRO</div>'; }
+  }catch(e){console.warn(e);el.innerHTML='<div class="att-loading">ANEXO INDISPONÍVEL</div>';}
 }
 
 /* ============ ADDRESS MAP (Leaflet / OpenStreetMap — sem chave de API) ============ */
@@ -2254,6 +2267,13 @@ function openUserForm(id){
   });
 }
 
+function prepareLogin(){
+  const admin=DB && DB.users.find(u=>u.id==='u_admin');
+  const first=!!(admin&&!admin.passwordHash);
+  const label=document.querySelector('.login-restricted');
+  if(label)label.textContent=first?'PRIMEIRO ACESSO · CRIE SEU LOGIN LOCAL':'ACESSO LOCAL · NÃO SINCRONIZADO';
+  document.getElementById('login-btn').textContent=first?'Criar acesso local':'Entrar';
+}
 /* ============ AUTH FLOW ============ */
 async function handleLogin(ev){
   ev.preventDefault();
@@ -2267,6 +2287,20 @@ async function handleLogin(ev){
     if(!DB){
       const found = await loadDB();
       if(!found) await seedDB();
+    }
+    const pending=DB.users.find(u=>u.id==='u_admin'&&!u.passwordHash);
+    if(pending){
+      if(password.length<8){
+        errEl.textContent='Defina uma senha com pelo menos 8 caracteres para este navegador.';
+        errEl.style.display='block';btn.disabled=false;btn.textContent='Criar acesso local';return;
+      }
+      if(DB.users.some(u=>u!==pending&&u.username.toLowerCase()===username.toLowerCase())){
+        errEl.textContent='Este nome de usuário já existe.';
+        errEl.style.display='block';btn.disabled=false;btn.textContent='Criar acesso local';return;
+      }
+      pending.username=username;
+      pending.passwordHash=await sha256(password);
+      if(!(await saveDB())) throw new Error('Falha ao gravar conta local');
     }
     const user = DB.users.find(u=>u.username.toLowerCase()===username.toLowerCase());
     const hash = await sha256(password);
@@ -2305,6 +2339,7 @@ async function handleLogout(){
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
+  prepareLogin();
 }
 
 /* ============ GLOBAL WIRES ============ */
@@ -2341,16 +2376,12 @@ function wireGlobal(){
   });
 }
 
-/* ============ INIT: DEMONSTRACAO SEGURA ============ */
+/* ============ INIT ============ */
 async function init(){
   wireGlobal();
-  await seedDB();
-  CURRENT_USER = {id:'demo_observer',username:'demo_observer',name:'Visitante de Demonstração',codename:'DEMO',role:'observador',status:'ONLINE'};
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  navigate('dashboard');
-  tickClock();
-  setInterval(tickClock, 1000);
+  const found = await loadDB();
+  if(!found) await seedDB();
+  prepareLogin();
 }
 init();
 

@@ -2382,12 +2382,15 @@ async function handleLogin(ev){
 }
 
 async function handleLogout(){
+  // A sessão é apagada antes de salvar: recarregar durante o logout não reabre a conta.
+  forgetLocalSession();
   if(CURRENT_USER){
     logAudit('Efetuou logout do sistema.');
     CURRENT_USER.status = 'OFFLINE';
     await saveDB();
   }
   CURRENT_USER = null;
+  if(clockInterval!==null){clearInterval(clockInterval);clockInterval=null;}
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-user').value = '';
@@ -2399,6 +2402,16 @@ async function handleLogout(){
 function wireGlobal(){
   document.getElementById('login-form').addEventListener('submit', handleLogin);
   document.getElementById('btn-logout').addEventListener('click', handleLogout);
+  // Logout em outra aba também encerra esta sessão local.
+  window.addEventListener('storage',ev=>{
+    if(ev.key===ACTIVE_SESSION_KEY && !ev.newValue && CURRENT_USER){
+      CURRENT_USER=null;
+      if(clockInterval!==null){clearInterval(clockInterval);clockInterval=null;}
+      document.getElementById('app').style.display='none';
+      document.getElementById('login-screen').style.display='flex';
+      prepareLogin();
+    }
+  });
   document.getElementById('modal-overlay').addEventListener('click', (e)=>{ if(e.target.id==='modal-overlay') closeModal(); });
   document.getElementById('mobile-menu-btn').addEventListener('click', ()=>document.getElementById('sidebar').classList.toggle('open'));
 

@@ -226,7 +226,7 @@
     return header('Mapa de Los Santos','Mapa GTA V com coordenadas X/Y, pinos e zonas cadastradas no painel.','locations')+
       '<div class="rp-map-layout"><section class="rp-panel"><div class="rp-panel-head"><h3>⌖ Mapa de GTA V</h3><span class="rp-muted">Arraste e use o zoom. Clique para adicionar um local.</span></div>'+
       '<div id="rp-map-canvas" class="rp-map-canvas"><div class="rp-empty">Carregando o mapa…</div></div>'+
-      '<div class="rp-map-foot"><span class="rp-dot"></span> QG / Família <span class="rp-dot violet"></span> Facções <span class="rp-dot mint"></span> Outros pontos <span class="rp-map-credit">Mapa © Rockstar Games · tiles: FiveDock</span></div></section>'+
+      '<div class="rp-map-foot"><span class="rp-legend-symbol family">'+(window.MafiaIcons?window.MafiaIcons.svg('headquarters','mc-marker-svg'):'◆')+'</span> QG da família <span class="rp-legend-symbol rival">'+(window.MafiaIcons?window.MafiaIcons.svg('shield','mc-marker-svg'):'◇')+'</span> Facção <span class="rp-legend-symbol">'+(window.MafiaIcons?window.MafiaIcons.svg('warehouse','mc-marker-svg'):'▣')+'</span> Outros locais <span class="rp-legend-symbol territory">'+(window.MafiaIcons?window.MafiaIcons.svg('territory','mc-marker-svg'):'⬡')+'</span> Territórios <span class="rp-map-credit">Mapa © Rockstar Games · tiles: FiveDock</span></div></section>'+
       '<aside class="rp-panel"><div class="rp-panel-head"><h3>Locais marcados</h3>'+btn('Ver lista','go','rp-locations')+'</div><div class="rp-map-side">'+
       (list('locations').length?list('locations').map(function(x){return '<div class="rp-map-location"><b>'+e(x.name)+'</b><small>'+e(x.kind||'LOCAL')+' · '+e(x.district||'sem distrito')+'</small>'+btn('Localizar','focus','locations',x.id)+'</div>';}).join(''):empty('Nenhum local cadastrado.','locations'))+
       '</div></aside></div>';
@@ -442,12 +442,20 @@
     list('locations').forEach(function(loc){
       if(loc.x===''||loc.y===''||loc.x==null||loc.y==null)return;
       if(!Number.isFinite(Number(loc.x))||!Number.isFinite(Number(loc.y)))return;
-      var color=loc.kind==='QG DE FACÇÃO'?'#a678e6':loc.kind==='QG DA FAMÍLIA'?'#dd4349':'#6ac4a7';
-      var marker=L.circleMarker([Number(loc.y),Number(loc.x)],{radius:7,color:'#fff',weight:1.5,fillColor:color,fillOpacity:.96})
-       .bindPopup('<strong>'+e(loc.name)+'</strong><p>'+e(loc.kind||'LOCAL')+'<br>'+e(loc.district||'')+'</p><code>X: '+e(loc.x)+' Y: '+e(loc.y)+'</code>');
+      var markerKind={
+        'QG DA FAMÍLIA':'headquarters','QG DE FACÇÃO':'shield',
+        'GALPÃO':'warehouse','GARAGEM':'garage','RESIDÊNCIA':'home',
+        'PONTO DE ENCONTRO':'meeting','TERRITÓRIO':'territory'
+      }[loc.kind]||'pin';
+      var tone=loc.kind==='QG DA FAMÍLIA'?'family':loc.kind==='QG DE FACÇÃO'?'rival':loc.kind==='TERRITÓRIO'?'territory':'neutral';
+      var markerHtml='<span class="mc-map-pin '+tone+'"><span class="plate">'+
+        (window.MafiaIcons?window.MafiaIcons.svg(markerKind,'mc-marker-svg'):'◆')+'</span></span>';
+      var icon=L.divIcon({className:'mafia-pin-wrap',html:markerHtml,iconSize:[40,48],iconAnchor:[20,43],popupAnchor:[0,-38]});
+      var marker=L.marker([Number(loc.y),Number(loc.x)],{icon,keyboard:true,title:loc.name});
+      marker.bindPopup('<strong>'+e(loc.name)+'</strong><p>'+e(loc.kind||'LOCAL')+'<br>'+e(loc.district||'')+'</p><code>X: '+e(loc.x)+' Y: '+e(loc.y)+'</code>');
       marker.addTo(map);
       if(loc.kind==='TERRITÓRIO'&&safeNumber(loc.radius)>0){
-        L.circle([Number(loc.y),Number(loc.x)],{radius:safeNumber(loc.radius),color,fillOpacity:.13,weight:1.5}).addTo(map);
+        L.circle([Number(loc.y),Number(loc.x)],{radius:safeNumber(loc.radius),color:'#b1b6bf',fillOpacity:.1,weight:1.5}).addTo(map);
       }
     });
     if(context.canEdit){

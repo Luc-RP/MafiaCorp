@@ -122,3 +122,330 @@ textarea.rp-input{resize:vertical;min-height:82px;}
 @media(max-width:1500px){.rp-dash-columns{grid-template-columns:repeat(2,minmax(0,1fr));}.rp-kpis{grid-template-columns:repeat(4,minmax(0,1fr));}}
 @media(max-width:1000px){.rp-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.rp-map-layout{grid-template-columns:1fr;}.rp-map-canvas{height:530px;}}
 @media(max-width:680px){.view:has(.rp-dashboard),.view:has(.rp-pagehead){padding-left:14px;padding-right:14px;}.rp-hero{margin-left:-14px;margin-right:-14px;padding:20px;min-height:138px;}.rp-hero-stamp{display:none;}.rp-dash-columns,.rp-dash-bottom{grid-template-columns:1fr;}.rp-faction-list{grid-template-columns:1fr;}.rp-pagehead{align-items:start;flex-direction:column;}.rp-card-grid{grid-template-columns:1fr;}.rp-fields{grid-template-columns:1fr;}.rp-map-canvas{height:470px;}.rp-map-side{max-height:350px;}.rp-network-panel .rp-graph{min-height:260px;}.rp-kpis{gap:8px;}.rp-kpi{padding:13px;min-height:104px;}.rp-kpi strong{font-size:28px;}}
+
+
+/* =========================================================
+   MAFIACORP • OBSIDIAN / BRUSHED SILVER
+   Noir industrial editorial. Foco em usabilidade e legibilidade.
+   ========================================================= */
+:root {
+  --black:#040505;
+  --graphite:#070809;
+  --panel:#0d0e10;
+  --panel-2:#131417;
+  --line:#303237;
+  --line-soft:#232529;
+  --grey-400:#85888e;
+  --grey-300:#b0b4bb;
+  --grey-100:#e4e6e9;
+  --white:#f2f3f5;
+  --ice:#c9cdd3;
+  --ice-dim:#666b74;
+  --alert:#582c32;
+  --alert-bright:#bd757a;
+  --ok:#799d8e;
+  --warn:#ae9572;
+  --rp-red:#aeb4bc;
+  --rp-red-bright:#edf0f4;
+  --rp-ink:#060708;
+  --rp-deep:#090a0c;
+  --rp-border:#393d43;
+  --rp-muted:#9da1a9;
+}
+html,body {background:#040505;color:#dddfe3;}
+body {font-feature-settings:"ss01";background-image:linear-gradient(90deg,rgba(255,255,255,.006) 1px,transparent 1px);background-size:72px 72px;}
+::selection {background:#646a74;color:#fff;}
+::-webkit-scrollbar-thumb {background:#3b3e43;}
+/* Shell: metal frio, divisórias industriais, tipografia editorial */
+.sidebar{
+  background:linear-gradient(150deg,#0c0d0f 0%,#050607 75%);
+  border-right:1px solid #3b3e43;
+  box-shadow:inset -1px 0 0 rgba(255,255,255,.04),12px 0 35px rgba(0,0,0,.22);
+}
+.sb-brand{
+  min-height:84px;
+  border-bottom:1px solid #45484d;
+  background:linear-gradient(120deg,rgba(186,190,196,.09),transparent 72%);
+}
+.sb-brand-text .name {
+  font:700 16px/1.1 Georgia,"Times New Roman",serif;
+  color:#f1f3f4;
+  letter-spacing:.16em;
+  text-shadow:0 1px 0 #777b80;
+}
+.sb-brand-text .tag {margin-top:7px;letter-spacing:.13em;color:#8a8e95;}
+.mc-crest,.sb-brand .mark.mc-crest{
+  position:relative;
+  flex-shrink:0;
+  background:linear-gradient(135deg,#2c3034,#0a0b0c 55%,#303439);
+  border:1px solid #9298a0;
+  clip-path:polygon(50% 0%,96% 16%,92% 74%,50% 100%,8% 74%,4% 16%);
+  box-shadow:inset 0 0 0 2px #131517,inset 0 0 0 3px #595e66;
+}
+.mc-crest span,.sb-brand .mark.mc-crest span{
+  color:#e6e9ed;
+  font:700 12px Georgia,serif;
+  letter-spacing:-.03em;
+  text-shadow:0 2px 3px #000;
+}
+.login-brand .mark.mc-crest{width:66px;height:76px;border-color:#9ea5ad;}
+.login-brand .mark.mc-crest span{font-size:21px;color:#f0f2f6;}
+.login-brand .mark.mc-crest::before,.login-brand .mark.mc-crest::after{display:none;}
+.sb-group-label{
+  color:#787c84;
+  letter-spacing:.15em;
+  border-top:1px solid rgba(185,191,200,.05);
+  margin-top:7px;
+}
+.sb-item{
+  border-left:2px solid transparent;
+  color:#a1a5ac;
+  padding:11px 12px;
+  margin-bottom:2px;
+  border-radius:2px;
+  font-weight:500;
+  transition:background .15s,color .15s,border-color .15s;
+}
+.sb-item:hover{background:linear-gradient(90deg,#212327,#0e1012);color:#f0f1f3;}
+.sb-item.active{
+  border-left-color:#d4d8dd;
+  color:#fff;
+  background:linear-gradient(90deg,#4c5057,#1b1e23 55%,#0c0e10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 -1px 0 rgba(255,255,255,.04);
+}
+.sb-item .ic{display:flex;align-items:center;justify-content:center;width:19px;min-width:19px;opacity:1;color:#b2b7be;}
+.sb-item.active .ic{color:#f2f4f5;}
+.mc-line-icon{display:inline-block;width:18px;height:18px;stroke:currentColor;fill:none;flex-shrink:0;vertical-align:middle;}
+.sb-foot{background:#08090a;border-top:1px solid #393d42;}
+.sb-user .av{
+  border:1px solid #747981;
+  color:#e1e4e8;
+  background:linear-gradient(145deg,#383c42,#0d0e10);
+}
+.sb-user .info .n{color:#e8e9ec;}
+.sb-user .info .r{color:#9599a0;}
+.sb-logout{color:#adb2ba;text-transform:uppercase;border-top:1px solid #202226;margin-top:12px;}
+.sb-logout:hover{color:#f2f4f5;background:#202226;}
+/* Topbar e aviso local */
+.topbar{
+  background:linear-gradient(180deg,#111215,#08090b);
+  border-bottom:1px solid #373a40;
+}
+.topbar .crumb b{color:#dfe2e6;}
+.topbar .search-wrap input{
+  background:#0b0c0e;border:1px solid #3c4046;color:#eaecf0;
+}
+.search-wrap input:focus{border-color:#a0a6af;box-shadow:0 0 0 2px #b8bec01a;}
+.search-results{background:#101215;border:1px solid #43474d;}
+.clock{font-size:10px;color:#a9adb5;}
+div[role="status"]:not(.toast){
+  background:linear-gradient(90deg,#1a1c20,#0d0f11)!important;
+  border-bottom:1px solid #34383d!important;
+  color:#9da3ad!important;
+}
+/* Painel legado: harmonização com a nova linguagem */
+.view{background:#08090a;}
+.panel,.table-wrap,.case-card,.dossie-head,.note-card,.cmap-wrap{
+  background:#101113;border-color:#34373d;
+}
+.panel-head{background:linear-gradient(180deg,#191b1f,#101113);border-bottom:1px solid #363a3f;}
+.panel-head h3{color:#e4e6e9;}
+.kpi{background:linear-gradient(160deg,#1c1e22,#0c0d0f);border:1px solid #41454b;}
+.kpi::before{background:#8f969f;}
+.kpi .val{color:#edf0f2;}
+.tab.active{color:#e5e9ee;border-bottom-color:#b8bec6;}
+.tab:hover{color:#d9dee4;}
+tbody tr:hover{background:#1b1d21;}
+.btn{
+  color:#cfd2d7;
+  background:linear-gradient(180deg,#24262a,#131518);
+  border-color:#464a51;
+  border-radius:2px;
+}
+.btn:hover{border-color:#aeb4bd;color:#f6f7f8;background:#35393e;}
+.btn-primary{
+  background:linear-gradient(115deg,#b1b6bd,#7e858f 45%,#c3c8cf);
+  color:#090a0c;
+  border:1px solid #a8aeb7;
+  font-weight:700;
+  box-shadow:inset 0 1px 0 #e1e5e8,0 3px 10px #0004;
+}
+.btn-primary:hover{background:linear-gradient(115deg,#e0e4e9,#afb5bd);color:#060708;border-color:#d2d7df;}
+.btn-danger{color:#d49da0;border-color:#684349;background:transparent;}
+.badge.b-grey,.badge.b-ice{color:#c6cbd2;border-color:#535962;background:#202227;}
+.badge.b-ice .dot{background:#c6cbd2;}
+.badge.b-red{color:#d5a4a6;background:#3a2327;border-color:#694348;}
+.badge.b-warn{color:#c7b4a1;background:#332c27;border-color:#675849;}
+.badge.b-ok{color:#a1b7aa;background:#1c2924;border-color:#455c51;}
+.field input,.field select,.field textarea{
+  background:#0c0e11;border-color:#3d4046;color:#e7e9ec;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#afb5be;}
+/* A tela de acesso, inspirada em um escritório noir e sigilo industrial */
+#login-screen{background:radial-gradient(ellipse 60% 55% at 50% 34%,#24272c 0%,#0b0d10 52%,#010203 100%);}
+.login-grid{
+  opacity:.85;
+  background-image:linear-gradient(rgba(215,221,228,.028) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(215,221,228,.027) 1px,transparent 1px);
+}
+.login-scan{background:linear-gradient(180deg,transparent,rgba(228,232,237,.03),transparent);}
+.login-box{width:410px;padding:34px 24px;background:linear-gradient(155deg,rgba(25,27,30,.95),rgba(6,7,8,.97));border:1px solid #5b5e64;box-shadow:0 35px 130px #000b,inset 0 1px 0 #ffffff16;}
+.login-brand{margin-bottom:25px;}
+.login-brand h1{
+  font:700 29px Georgia,serif;letter-spacing:.15em;color:#eaecf1;
+  text-shadow:0 1px 1px #000;
+}
+.login-brand .sub{color:#8e939b;letter-spacing:.12em;font-size:10px;}
+.login-restricted{
+  color:#ccd0d6;background:#22252a;
+  border-color:#555b62;
+  letter-spacing:.16em;
+}
+.login-error{color:#ecc0c2;background:#422b2d;border-color:#71494c;}
+.login-footnote{color:#898e97;}
+/* RP modules - monocrômico com metal escovado e acentos de perigo comedidos */
+.view:has(.rp-dashboard),.view:has(.rp-pagehead){
+  background:radial-gradient(ellipse 70% 45% at 65% 0%,rgba(184,189,199,.055),transparent 76%),#070809;
+}
+.rp-hero{
+  background:
+    radial-gradient(ellipse 45% 115% at 78% 22%,rgba(179,187,201,.17),transparent 78%),
+    linear-gradient(110deg,#0a0b0d 15%,#22262c 66%,#0a0c0f);
+  border-bottom:1px solid #61656d;
+  min-height:170px;
+}
+.rp-hero:before{background:linear-gradient(90deg,transparent,#434851 18%,#808590 50%,#22252a 82%,transparent);opacity:.40;}
+.rp-hero:after{background:linear-gradient(90deg,#090a0c 5%,transparent 87%);}
+.rp-eyebrow{color:#bec2ca;letter-spacing:.18em;}
+.rp-hero h1{color:#f0f1f4;font-family:Georgia,"Times New Roman",serif;font-weight:500;letter-spacing:-.02em;}
+.rp-hero p{color:#9fa4ac;}
+.rp-hero-stamp{
+  color:#e3e6ea;
+  font-family:Georgia,serif;
+  border:1px double #969da7;
+  background:linear-gradient(150deg,#23262b,#070809);
+  text-shadow:0 2px 5px #000;
+  box-shadow:inset 0 0 0 3px #111317,inset 0 0 0 4px #565d65;
+  clip-path:polygon(50% 0%,100% 12%,95% 82%,50% 100%,5% 82%,0% 12%);
+  padding:20px 24px 30px;
+}
+.rp-hero-stamp small{color:#c0c4cb;}
+.rp-kpi{
+  background:linear-gradient(140deg,#202329,#101114 60%,#0c0d0f);
+  border:1px solid #494e56;border-top:1px solid #9197a0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 12px 24px #0003;
+}
+.rp-kpi:after{border-color:rgba(190,196,204,.14);}
+.rp-kpi span{color:#aeb4bd;}
+.rp-kpi strong{color:#f0f2f5;}
+.rp-kpi small{color:#898d95;}
+.rp-panel{
+  background:linear-gradient(165deg,#141619,#090a0c);
+  border-color:#393d44;
+  box-shadow:inset 0 1px 0 #ffffff09,0 10px 26px #0004;
+}
+.rp-panel-head{
+  background:linear-gradient(180deg,#1f2226,#111317);
+  border-bottom-color:#4b4e54;
+}
+.rp-panel-head h3{color:#e8ebf0;}
+.rp-btn{
+  background:linear-gradient(180deg,#282c31,#16191d);
+  color:#d4d8dd;
+  border:1px solid #575d65;
+}
+.rp-btn:hover{background:#40464e;color:#fff;border-color:#bcc3cc;}
+.rp-primary{
+  color:#0e1012;
+  background:linear-gradient(115deg,#d1d5db,#a2a8b0,#e0e3e7);
+  border-color:#c6cbd1;
+  font-weight:700;
+}
+.rp-primary:hover{color:#0d0e0f;background:linear-gradient(110deg,#e5e8ec,#b6bcc5);}
+.rp-btn:focus-visible,.rp-input:focus-visible{outline-color:#d6dbe2;}
+.rp-avatar{
+  color:#e2e5e9;border-color:#a0a6af;
+  background:linear-gradient(135deg,#3d424a,#0e1013);
+  box-shadow:inset 0 0 0 2px #16181b;
+}
+.rp-grow strong,.rp-mission-header strong,.rp-goal-row strong{color:#eceef1;}
+.rp-grow small,.rp-mission-header small,.rp-goal-row small{color:#a3a7ae;}
+.rp-tag{background:#272b30;border:1px solid #6c727c;color:#cfd4db;}
+.rp-mission-row,.rp-goal-row{border-bottom-color:#34373d;}
+.rp-mission-meter b,.rp-split b,.rp-percent{color:#e1e4e9;}
+.rp-progress{background:#35393e;}
+.rp-progress span{background:linear-gradient(90deg,#7f858d,#d5dae0);box-shadow:0 0 7px #aaa6;}
+.rp-teaser-art{
+  background:radial-gradient(ellipse at 55% 48%,#303740,#0c1015 67%);
+}
+.rp-map-rings{background:repeating-radial-gradient(circle at center,transparent 0 18px,rgba(196,206,220,.20) 19px 20px,transparent 21px 38px);}
+.rp-teaser-art:after{background-image:linear-gradient(20deg,transparent 48%,#d7dce4 50%,transparent 52%),linear-gradient(70deg,transparent 47%,#d7dce4 49%,transparent 51%);}
+.rp-teaser-art strong{color:#e7ebf1;text-shadow:0 0 17px #7b8490;}
+.rp-teaser-art small{color:#aeb8c5;}
+.rp-faction-row,.rp-node,.rp-profile{
+  border-color:#50545c;background:linear-gradient(145deg,#1b1e23,#0c0d0f);
+}
+.rp-faction-row b,.rp-node{color:#e6e9ed;}
+.rp-skull{background:#25282e;color:#bbc1ca;border-color:#6c737b;}
+.rp-connect-preview{background:radial-gradient(ellipse,#292c32,#0b0c0e);}
+.rp-node.central{background:#32363e;border-color:#8f969f;}
+.rp-connect-preview span{background:#8d939b;}
+.rp-profile-top{border-bottom-color:#4a4f55;}
+.rp-profile h3,.rp-profile-grid b{color:#e5e8ec;}
+.rp-profile-grid span{color:#a2a8b0;}
+.rp-profile-notes{background:#181a1e;border-left-color:#9ca3ae;color:#bdc2c9;}
+.rp-big-metric{color:#e8ebef;}
+.rp-pagehead h1{font-family:Georgia,serif;letter-spacing:.01em;font-weight:500;color:#ecedef;}
+.rp-pagehead p,.rp-muted{color:#a6acb4;}
+.rp-map-foot{background:#121417;color:#b2b8c1;border-color:#474b51;}
+.rp-map-canvas{filter:brightness(.86) grayscale(.15) contrast(1.04);}
+.rp-graph-hint{background:#16191c;color:#bbc0c8;}
+.rp-graph-node:hover circle{filter:drop-shadow(0 0 10px #d0d5dc);}
+.rp-input{background:#101215!important;border-color:#4d525a!important;color:#eaecf1!important;}
+.rp-field span{color:#c4c9d1;}
+.rp-empty-icon{color:#bfc6cf;}
+/* Mapa: ícones de marcação na forma de insígnias de metal */
+.mc-map-pin{
+  width:40px;height:48px;
+  display:flex;align-items:flex-start;justify-content:center;
+  position:relative;filter:drop-shadow(0 5px 7px #000c);
+  transform-origin:50% 85%;
+}
+.mc-map-pin .plate{
+  width:38px;height:38px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#3e444c 0%,#111417 55%,#565d67 100%);
+  border:1px solid #cbd0d7;
+  box-shadow:0 0 0 3px #0b0d10,inset 0 1px 0 #ffffff25;
+  transform:rotate(45deg);
+  border-radius:4px;
+}
+.mc-map-pin .plate:after{
+  content:'';position:absolute;inset:5px;
+  border:1px solid #b9c0c831;
+}
+.mc-map-pin .plate svg{width:20px;height:20px;transform:rotate(-45deg);stroke:#f5f7f9;position:relative;z-index:2;}
+.mc-map-pin.family .plate{background:linear-gradient(140deg,#bcc3cc,#555e69 55%,#e6e9ed);border-color:#f8f9fa;}
+.mc-map-pin.family .plate svg{stroke:#0f1318;}
+.mc-map-pin.rival .plate{background:linear-gradient(135deg,#48414b,#1f1b22);border-color:#a098a4;}
+.mc-map-pin.rival .plate svg{stroke:#d3c5d5;}
+.mc-map-pin.territory .plate{background:linear-gradient(135deg,#b3b3b6,#3e444b);}
+.mc-map-pin.territory .plate svg{stroke:#0f1114;}
+.mc-map-pin:hover{z-index:999!important;filter:drop-shadow(0 0 12px #bfc6cd96);}
+.leaflet-marker-icon.mafia-pin-wrap{background:transparent;border:0;}
+.rp-legend-symbol{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border:1px solid #aeb4bd;background:#272b30;vertical-align:middle;margin:0 4px 0 12px;}
+.rp-legend-symbol svg{width:13px;height:13px;stroke:#e9eef4;}
+.rp-legend-symbol.rival{background:#352c38;border-color:#817689;}
+.rp-legend-symbol.territory{background:#b5bdc7;border-color:#e5e8ec;}
+.rp-legend-symbol.territory svg{stroke:#15181b;}
+.rp-map-location{border-bottom-color:#34383f;}
+.rp-map-location b{color:#e9ebee;}
+.rp-map-location small{color:#abb1b8;}
+/* Contornos visíveis para controle de teclado */
+.sb-item:focus-visible,.rp-btn:focus-visible{outline:2px solid #dce1e7;outline-offset:2px;}
+@media(max-width:680px){
+  .sb-brand-text .name{font-size:15px;}
+  .rp-hero{min-height:132px;}
+  .rp-hero h1{font-size:27px;}
+  .rp-map-foot{gap:5px;line-height:1.8;}
+  .login-box{width:96vw;margin:10px;padding:28px 18px;}
+}

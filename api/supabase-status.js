@@ -29,9 +29,12 @@ module.exports = async function supabaseStatus(req, res) {
       reachable:response.status >= 200 && response.status < 500,
       dataApiAccessible:response.ok,
       securityReady:false,
+      upstreamStatus:response.status,
       mode:'health_check_only'
     });
-  } catch {
-    return res.status(200).json({configured:true,reachable:false,securityReady:false,mode:'health_check_only'});
+  } catch (error) {
+    const code = error && (error.cause?.code || error.code || error.name);
+    const diagnostic = typeof code === 'string' && /^[A-Z_a-z0-9]{1,40}$/.test(code) ? code : 'UNAVAILABLE';
+    return res.status(200).json({configured:true,reachable:false,securityReady:false,diagnostic,mode:'health_check_only'});
   } finally { clearTimeout(timer); }
 };

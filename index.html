@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MafiaCorp | Central da Família</title>
-<link rel="stylesheet" href="/mafia-center.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -401,6 +400,7 @@ tbody tr:last-child td{border-bottom:none;}
 }
 .mobile-menu-btn{display:none;background:none;border:1px solid var(--line);color:var(--grey-100);width:32px;height:32px;border-radius:3px;align-items:center;justify-content:center;}
 </style>
+<link rel="stylesheet" href="/mafia-center.css">
 </head>
 <body>
 
@@ -409,9 +409,9 @@ tbody tr:last-child td{border-bottom:none;}
   <div class="login-scan"></div>
   <div class="login-box">
     <div class="login-brand">
-      <div class="mark"><span>BI</span></div>
+      <div class="mark mc-crest"><span>MC</span></div>
       <h1>MAFIACORP</h1>
-      <div class="sub">Intelligence System</div>
+      <div class="sub">БРАТСТВО · ROLEPLAY INTELLIGENCE</div>
     </div>
     <div class="login-restricted">⚠ ACESSO RESTRITO</div>
     <div class="login-error" id="login-error"></div>
@@ -430,8 +430,8 @@ tbody tr:last-child td{border-bottom:none;}
   <div class="shell">
     <aside class="sidebar" id="sidebar">
       <div class="sb-brand">
-        <div class="mark"><span>BI</span></div>
-        <div class="sb-brand-text"><div class="name">MAFIACORP</div><div class="tag">ROLEPLAY / INTELLIGENCE</div></div>
+        <div class="mark mc-crest"><span>MC</span></div>
+        <div class="sb-brand-text"><div class="name">MAFIACORP</div><div class="tag">BLACK SYNDICATE / RP</div></div>
       </div>
       <nav class="sb-nav" id="sb-nav"></nav>
       <div class="sb-foot">
@@ -448,12 +448,12 @@ tbody tr:last-child td{border-bottom:none;}
         <div class="crumb" id="crumb"></div>
         <div class="search-wrap">
           <span class="sic">⌕</span>
-          <input type="text" id="global-search" placeholder="Pesquisar no Black Investigation...">
+          <input type="text" id="global-search" placeholder="Pesquisar na Central MafiaCorp...">
           <div class="search-results" id="search-results"></div>
         </div>
         <div class="clock" id="clock"></div>
       </div>
-      <div role="status" style="padding:9px 22px;background:#1b1110;color:#dfaaa5;border-bottom:1px solid #452321;font:11px/1.5 var(--font-mono)">● MODO LOCAL · Cadastros e anexos ficam neste navegador, sem servidor ou sincronização.</div><div class="view" id="view"></div>
+      <div role="status" style="padding:9px 22px;background:#1b1110;color:#dfaaa5;border-bottom:1px solid #452321;font:11px/1.5 var(--font-mono)">◈ MODO LOCAL · Cadastros e anexos ficam apenas neste navegador.</div><div class="view" id="view"></div>
     </div>
   </div>
 </div>
@@ -463,6 +463,7 @@ tbody tr:last-child td{border-bottom:none;}
 </div>
 <div class="toast-stack" id="toast-stack"></div>
 
+<script src="/mafia-icons.js"></script>
 <script src="/mafia-center.js"></script>
 <script>
 (function(){
@@ -785,7 +786,7 @@ function renderSidebar(){
   const nav = document.getElementById('sb-nav');
   nav.innerHTML = NAV.map(g=>`
     <div class="sb-group-label">${g.group}</div>
-    ${g.items.map(it=>`<div class="sb-item ${CURRENT_VIEW===it.id?'active':''}" data-nav="${it.id}"><span class="ic">${it.icon}</span>${it.label}</div>`).join('')}
+    ${g.items.map(it=>`<div class="sb-item ${CURRENT_VIEW===it.id?'active':''}" data-nav="${it.id}"><span class="ic">${window.MafiaIcons ? window.MafiaIcons.svg(it.id) : it.icon}</span>${it.label}</div>`).join('')}
   `).join('');
   nav.querySelectorAll('.sb-item').forEach(el=>{
     el.addEventListener('click', ()=>{ navigate(el.dataset.nav); document.getElementById('sidebar').classList.remove('open'); });

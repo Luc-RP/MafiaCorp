@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050506">
+  <meta name="description" content="Black Investigation, central de inteligência e visualização de dossiês. Demonstração pública com dados fictícios.">
+  <title>BLACK INVESTIGATION | MafiaCorp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <div id="app" class="app">
+    <aside id="sidebar" class="sidebar" aria-label="Navegação principal">
+      <div class="brand">
+        <div class="brand-mark">BI<span class="brand-corner"></span></div>
+        <div class="brand-copy"><strong>BLACK<br>INVESTIGATION</strong><span>MAFIACORP / INTELLIGENCE</span></div>
+      </div>
+      <div class="side-caption">SISTEMA DE INTELIGÊNCIA</div>
+      <nav id="navigation" class="navigation"></nav>
+      <div class="sidebar-foot">
+        <div class="access"><span class="pulse"></span><div><strong>ACESSO DE VISUALIZAÇÃO</strong><span>Ambiente demonstrativo</span></div></div>
+        <div class="sidebar-license">© 2026 MAFIACORP<br>BLACK INVESTIGATION</div>
+      </div>
+    </aside>
+    <div id="mobile-scrim" class="mobile-scrim" hidden></div>
+    <div class="workspace">
+      <header class="topbar">
+        <button id="menu-toggle" class="icon-button mobile-only" aria-label="Abrir menu" aria-expanded="false">☰</button>
+        <div class="breadcrumbs"><span>MAFIACORP</span><i>/</i><strong id="breadcrumb">COMMAND CENTER</strong></div>
+        <div class="topbar-right">
+          <div class="topbar-search"><span class="search-icon">⌕</span><input id="search" type="search" placeholder="Buscar registros..." aria-label="Buscar registros" autocomplete="off"><kbd>CTRL K</kbd></div>
+          <span class="read-only-chip">SOMENTE LEITURA</span>
+          <time id="clock" aria-label="Horário atual"></time>
+        </div>
+      </header>
+      <div class="notice"><span class="notice-dot"></span><strong>AMBIENTE DEMONSTRATIVO</strong><span>Dados fictícios para apresentação pública. Nenhum registro confidencial é carregado.</span><span class="notice-right">BUILD 1.0</span></div>
+      <main id="content" class="main-content" tabindex="-1"></main>
+      <footer class="footer"><span>BLACK INVESTIGATION <b>•</b> MAFIACORP</span><span>INTERFACE DE VISUALIZAÇÃO / PT-BR</span></footer>
+    </div>
+  </div>
+  <div id="modal-root" class="modal-root" hidden></div>
+</body>
+</html>

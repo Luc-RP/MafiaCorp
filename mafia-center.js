@@ -110,7 +110,7 @@
     return out;
   }
   function typeColor(kind){
-    return {members:'#e85b5b',suspects:'#ef9a72',factions:'#af7fed',contacts:'#e5bc80',vehicles:'#85a3ac',locations:'#6fbeaa'}[kind]||'#ddd';
+    return {members:'#e5e8ed',suspects:'#b8bec7',factions:'#9096a1',contacts:'#b8b0a6',vehicles:'#91a0ac',locations:'#aeb7b1'}[kind]||'#ddd';
   }
   function badge(text,color){
     return '<span class="rp-tag '+(color||'')+'">'+e(friendly(text))+'</span>';

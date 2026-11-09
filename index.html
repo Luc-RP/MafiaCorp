@@ -1,47 +1,2359 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#050506">
-  <meta name="description" content="Black Investigation, central de inteligência e visualização de dossiês. Demonstração pública com dados fictícios.">
-  <title>BLACK INVESTIGATION | MafiaCorp</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css">
-  <script defer src="/app.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLACK INVESTIGATION</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{
+  --black:#000000;
+  --graphite:#050506;
+  --panel:#0a0a0b;
+  --panel-2:#0e0f10;
+  --line:#1c1c1f;
+  --line-soft:#141416;
+  --grey-400:#6b6c72;
+  --grey-300:#8b8c92;
+  --grey-100:#cfd0d4;
+  --white:#f5f5f6;
+  --ice:#b8433f;
+  --ice-dim:#4a201e;
+  --alert:#7a2828;
+  --alert-bright:#c94f4f;
+  --ok:#376e56;
+  --warn:#a67a2a;
+  --radius:3px;
+  --font-display:'Space Grotesk',sans-serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--black);
+  color:var(--grey-100);
+  font-family:var(--font-body);
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+::selection{background:var(--ice-dim);color:#fff;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#2a2b2f;border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:#38393e;}
+a{color:inherit;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+
+.mono{font-family:var(--font-mono);letter-spacing:.02em;}
+.eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--grey-400);}
+
+/* ---------- LOGIN ---------- */
+#login-screen{
+  position:fixed;inset:0;background:var(--black);
+  display:flex;align-items:center;justify-content:center;
+  z-index:500;
+}
+.login-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:42px 42px;
+  mask-image:radial-gradient(ellipse 60% 60% at 50% 40%, black 0%, transparent 75%);
+}
+.login-scan{
+  position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(184,67,63,.04),transparent);
+  height:200px;width:100%;
+  animation:scan 7s linear infinite;
+}
+@keyframes scan{0%{transform:translateY(-200px);}100%{transform:translateY(100vh);}}
+.login-box{
+  position:relative;z-index:2;width:380px;padding:0 20px;
+  animation:fadeUp .6s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.login-brand{text-align:center;margin-bottom:34px;}
+.login-brand .mark{
+  width:46px;height:46px;margin:0 auto 18px;
+  border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.login-brand .mark::before,.login-brand .mark::after{
+  content:'';position:absolute;width:6px;height:6px;border:1px solid var(--ice);
+}
+.login-brand .mark::before{top:-1px;left:-1px;border-right:none;border-bottom:none;}
+.login-brand .mark::after{bottom:-1px;right:-1px;border-left:none;border-top:none;}
+.login-brand .mark span{font-family:var(--font-display);font-weight:700;color:var(--ice);font-size:18px;}
+.login-brand h1{
+  font-family:var(--font-display);font-weight:700;font-size:22px;
+  letter-spacing:.06em;color:var(--white);
+}
+.login-brand .sub{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;
+  color:var(--grey-400);margin-top:6px;text-transform:uppercase;
+}
+.login-restricted{
+  text-align:center;font-family:var(--font-mono);font-size:11px;
+  letter-spacing:.15em;color:var(--alert-bright);margin-bottom:24px;
+  padding:8px;border:1px solid rgba(201,79,79,.25);background:rgba(140,47,47,.08);
+}
+.field{margin-bottom:14px;}
+.field label{
+  display:block;font-family:var(--font-mono);font-size:10px;
+  letter-spacing:.12em;color:var(--grey-400);margin-bottom:6px;text-transform:uppercase;
+}
+.field input,.field select,.field textarea{
+  width:100%;background:var(--panel);border:1px solid var(--line);
+  color:var(--white);padding:11px 12px;border-radius:var(--radius);
+  font-size:13px;outline:none;transition:border-color .15s;
+}
+.field textarea{resize:vertical;min-height:70px;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--ice-dim);}
+.btn{
+  border:1px solid var(--line);background:var(--panel-2);color:var(--grey-100);
+  padding:10px 16px;border-radius:var(--radius);font-size:12px;
+  font-family:var(--font-mono);letter-spacing:.08em;text-transform:uppercase;
+  transition:all .15s;
+}
+.btn:hover{border-color:var(--grey-400);color:var(--white);}
+.btn-primary{
+  background:var(--ice-dim);border-color:var(--ice-dim);color:#fff;width:100%;
+  padding:12px;font-weight:600;
+}
+.btn-primary:hover{background:var(--ice);border-color:var(--ice);}
+.btn-danger{border-color:rgba(201,79,79,.4);color:var(--alert-bright);}
+.btn-danger:hover{border-color:var(--alert-bright);background:rgba(140,47,47,.12);}
+.btn-sm{padding:6px 10px;font-size:10px;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.login-footnote{
+  text-align:center;font-size:10.5px;color:var(--grey-400);margin-top:22px;line-height:1.5;
+}
+.login-error{
+  background:rgba(140,47,47,.12);border:1px solid rgba(201,79,79,.3);color:var(--alert-bright);
+  font-size:11.5px;padding:9px 11px;border-radius:var(--radius);margin-bottom:14px;display:none;
+}
+.login-demo{
+  margin-top:18px;padding:10px 12px;border:1px dashed var(--line);font-size:10.5px;color:var(--grey-400);
+  font-family:var(--font-mono);
+}
+
+/* ---------- APP SHELL ---------- */
+#app{display:none;height:100vh;width:100vw;}
+.shell{display:grid;grid-template-columns:230px 1fr;height:100vh;}
+.sidebar{
+  background:var(--graphite);border-right:1px solid var(--line-soft);
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.sb-brand{
+  padding:20px 18px;border-bottom:1px solid var(--line-soft);
+  display:flex;align-items:center;gap:10px;
+}
+.sb-brand .mark{width:26px;height:26px;border:1px solid var(--ice-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-brand .mark span{font-family:var(--font-display);font-weight:700;color:var(--ice);font-size:12px;}
+.sb-brand-text .name{font-family:var(--font-display);font-weight:700;font-size:13.5px;color:var(--white);letter-spacing:.03em;}
+.sb-brand-text .tag{font-family:var(--font-mono);font-size:8.5px;color:var(--grey-400);letter-spacing:.14em;}
+.sb-nav{flex:1;padding:12px 10px;}
+.sb-group-label{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;color:#4d4e53;padding:14px 10px 6px;text-transform:uppercase;}
+.sb-item{
+  display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:var(--radius);
+  color:var(--grey-300);font-size:12.5px;cursor:pointer;margin-bottom:1px;
+  border-left:2px solid transparent;transition:all .12s;
+}
+.sb-item:hover{background:var(--panel);color:var(--grey-100);}
+.sb-item.active{background:var(--panel);color:var(--white);border-left-color:var(--ice);}
+.sb-item .ic{width:15px;text-align:center;font-size:13px;opacity:.85;}
+.sb-foot{padding:12px;border-top:1px solid var(--line-soft);}
+.sb-user{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:var(--radius);}
+.sb-user .av{width:28px;height:28px;border-radius:50%;background:var(--panel-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;color:var(--ice);flex-shrink:0;}
+.sb-user .info .n{font-size:12px;color:var(--white);font-weight:600;}
+.sb-user .info .r{font-family:var(--font-mono);font-size:9.5px;color:var(--grey-400);letter-spacing:.06em;}
+.sb-logout{width:100%;margin-top:8px;text-align:left;background:none;border:none;color:var(--grey-400);font-size:11px;padding:6px 9px;font-family:var(--font-mono);letter-spacing:.06em;}
+.sb-logout:hover{color:var(--alert-bright);}
+
+.main{display:flex;flex-direction:column;overflow:hidden;}
+.topbar{
+  height:56px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;
+  padding:0 22px;gap:16px;flex-shrink:0;background:var(--graphite);
+}
+.topbar .crumb{font-family:var(--font-mono);font-size:11px;color:var(--grey-400);letter-spacing:.06em;}
+.topbar .crumb b{color:var(--white);}
+.search-wrap{flex:1;max-width:420px;position:relative;margin-left:auto;}
+.search-wrap input{
+  width:100%;background:var(--panel);border:1px solid var(--line);color:var(--grey-100);
+  padding:8px 12px 8px 30px;border-radius:var(--radius);font-size:12.5px;outline:none;
+}
+.search-wrap input:focus{border-color:var(--ice-dim);}
+.search-wrap .sic{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--grey-400);font-size:12px;}
+.search-results{
+  position:absolute;top:38px;left:0;right:0;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:var(--radius);max-height:400px;overflow-y:auto;display:none;z-index:80;
+  box-shadow:0 12px 30px rgba(0,0,0,.5);
+}
+.sr-group-label{font-family:var(--font-mono);font-size:9px;letter-spacing:.12em;color:var(--grey-400);padding:8px 12px 4px;text-transform:uppercase;}
+.sr-item{padding:8px 12px;font-size:12px;color:var(--grey-100);cursor:pointer;border-top:1px solid var(--line-soft);}
+.sr-item:hover{background:var(--panel);}
+.sr-item small{color:var(--grey-400);display:block;font-size:10px;margin-top:1px;}
+.clock{font-family:var(--font-mono);font-size:11px;color:var(--grey-400);white-space:nowrap;}
+
+.view{flex:1;overflow-y:auto;padding:26px 30px 60px;background:radial-gradient(ellipse 120% 60% at 50% 0%, rgba(255,255,255,.015) 0%, transparent 55%);}
+.view-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+.view-title{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--white);letter-spacing:.01em;}
+.view-title .n{color:var(--ice);}
+.view-sub{font-family:var(--font-mono);font-size:10.5px;color:var(--grey-400);letter-spacing:.1em;margin-top:4px;text-transform:uppercase;}
+
+/* dashboard */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+.kpi{
+  background:linear-gradient(180deg, var(--panel-2) 0%, var(--panel) 100%);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px 14px;
+  position:relative;overflow:hidden;box-shadow:0 12px 28px -14px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.02);
+}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:2px;height:100%;background:var(--ice-dim);}
+.kpi .lab{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:var(--grey-400);text-transform:uppercase;}
+.kpi .val{font-family:var(--font-display);font-size:30px;font-weight:700;color:var(--white);margin-top:6px;}
+.dash-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:0 10px 26px -16px rgba(0,0,0,.9);}
+.panel-head{padding:13px 16px;border-bottom:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.008);}
+.panel-head h3{font-family:var(--font-display);font-size:13px;letter-spacing:.04em;color:var(--white);font-weight:600;}
+.panel-body{padding:6px 0;max-height:420px;overflow-y:auto;}
+.activity-row{padding:10px 16px;border-bottom:1px solid var(--line-soft);display:flex;gap:12px;}
+.activity-row:last-child{border-bottom:none;}
+.activity-row .t{font-family:var(--font-mono);font-size:10px;color:var(--grey-400);width:42px;flex-shrink:0;padding-top:1px;}
+.activity-row .d{font-size:12px;color:var(--grey-100);line-height:1.5;}
+.activity-row .d b{color:var(--ice);font-weight:600;}
+.mini-chart-row{display:flex;align-items:center;gap:10px;padding:8px 16px;}
+.mini-chart-row .lbl{width:110px;font-size:11px;color:var(--grey-300);flex-shrink:0;}
+.mini-bar{flex:1;height:6px;background:var(--line-soft);border-radius:3px;overflow:hidden;}
+.mini-bar i{display:block;height:100%;background:var(--ice-dim);}
+.mini-chart-row .num{font-family:var(--font-mono);font-size:11px;color:var(--grey-400);width:22px;text-align:right;}
+
+/* tables */
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+.toolbar select{background:var(--panel);border:1px solid var(--line);color:var(--grey-100);padding:7px 10px;border-radius:var(--radius);font-size:11.5px;}
+.table-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:600px;}
+thead th{
+  text-align:left;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:var(--grey-400);
+  text-transform:uppercase;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--panel-2);
+  white-space:nowrap;
+}
+tbody td{padding:11px 14px;font-size:12.5px;color:var(--grey-100);border-bottom:1px solid var(--line-soft);white-space:nowrap;}
+tbody tr{cursor:pointer;transition:background .1s;}
+tbody tr:hover{background:var(--panel-2);}
+.row-selected{background:rgba(184,67,63,.10)!important;}
+.row-selected:hover{background:rgba(184,67,63,.16)!important;}
+input[type=checkbox]{accent-color:var(--ice);cursor:pointer;}
+tbody tr:last-child td{border-bottom:none;}
+.empty-row td{color:var(--grey-400);text-align:center;padding:30px;cursor:default;}
+.empty-row td:hover{background:none;}
+
+.badge{
+  display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10px;
+  letter-spacing:.05em;padding:3px 8px;border-radius:2px;text-transform:uppercase;border:1px solid transparent;
+}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.b-red{color:var(--alert-bright);border-color:rgba(201,79,79,.35);background:rgba(140,47,47,.1);}
+.b-red .dot{background:var(--alert-bright);}
+.b-ice{color:var(--ice);border-color:rgba(184,67,63,.35);background:rgba(184,67,63,.08);}
+.b-ice .dot{background:var(--ice);}
+.b-ok{color:var(--ok);border-color:rgba(63,143,106,.35);background:rgba(63,143,106,.1);}
+.b-ok .dot{background:var(--ok);}
+.b-warn{color:var(--warn);border-color:rgba(184,137,47,.35);background:rgba(184,137,47,.1);}
+.b-warn .dot{background:var(--warn);}
+.b-grey{color:var(--grey-300);border-color:var(--line);background:var(--panel-2);}
+.b-grey .dot{background:var(--grey-400);}
+
+/* cards grid (investigations) */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.case-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;cursor:pointer;transition:border-color .15s,transform .1s;position:relative;}
+.case-card:hover{border-color:var(--ice-dim);}
+.case-card .cid{font-family:var(--font-mono);font-size:10px;color:var(--grey-400);letter-spacing:.06em;}
+.case-card .cname{font-family:var(--font-display);font-size:15.5px;color:var(--white);font-weight:700;margin:6px 0 12px;line-height:1.3;}
+.case-card .badges{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.case-card .meta{display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey-400);border-top:1px solid var(--line-soft);padding-top:10px;font-family:var(--font-mono);}
+.case-card .meta b{color:var(--grey-100);font-weight:600;}
+
+/* buttons top-right */
+.view-actions{display:flex;gap:8px;}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;z-index:200;overflow-y:auto;padding:40px 20px;}
+.modal{background:var(--graphite);border:1px solid var(--line);border-radius:4px;width:560px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,.6);animation:fadeUp .2s ease;}
+.modal.wide{width:760px;}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:center;}
+.modal-head h3{font-family:var(--font-display);font-size:15px;color:var(--white);font-weight:700;}
+.modal-close{background:none;border:none;color:var(--grey-400);font-size:18px;line-height:1;}
+.modal-close:hover{color:var(--white);}
+.modal-body{padding:20px;max-height:70vh;overflow-y:auto;}
+.modal-body .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--line-soft);display:flex;justify-content:flex-end;gap:8px;}
+.toast-stack{position:fixed;bottom:20px;right:20px;z-index:400;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--ok);padding:11px 16px;border-radius:3px;font-size:12px;color:var(--grey-100);min-width:230px;animation:fadeUp .2s ease;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.toast.err{border-left-color:var(--alert-bright);}
+
+/* detail / dossie */
+.dossie-head{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;}
+.dossie-head .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+.dossie-head h1{font-family:var(--font-display);font-size:22px;color:var(--white);font-weight:700;}
+.dossie-head .cid{font-family:var(--font-mono);font-size:11px;color:var(--grey-400);margin-top:3px;letter-spacing:.06em;}
+.dossie-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line-soft);}
+.dossie-meta .m .l{font-family:var(--font-mono);font-size:9px;color:var(--grey-400);letter-spacing:.1em;text-transform:uppercase;}
+.dossie-meta .m .v{font-size:13px;color:var(--grey-100);margin-top:4px;font-weight:500;}
+
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto;}
+.tab{padding:10px 14px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;color:var(--grey-400);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;text-transform:uppercase;}
+.tab:hover{color:var(--grey-100);}
+.tab.active{color:var(--ice);border-bottom-color:var(--ice);}
+
+.subgrid-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.subgrid-head h4{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;color:var(--grey-300);text-transform:uppercase;}
+
+.profile-photo{width:100%;aspect-ratio:1;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--grey-400);font-size:11px;font-family:var(--font-mono);}
+.profile-photo{position:relative;}
+.profile-photo img{width:100%;height:100%;object-fit:cover;}
+.profile-photo img + .photo-empty{display:none;}
+.profile-photo-edit{cursor:pointer;}
+.profile-photo-edit:hover{border-color:var(--ice);}
+.photo-overlay{position:absolute;left:0;right:0;bottom:0;padding:9px 6px;background:rgba(0,0,0,.72);color:var(--white);font-size:10px;letter-spacing:.12em;text-align:center;opacity:0;transition:opacity .15s;}
+.profile-photo-edit:hover .photo-overlay,.photo-overlay.always{opacity:1;}
+
+.note-card{background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--ice-dim);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;}
+.note-card.pinned{border-left-color:var(--warn);}
+.note-card .h{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9.5px;color:var(--grey-400);margin-bottom:6px;letter-spacing:.05em;}
+.note-card p{font-size:12.5px;color:var(--grey-100);line-height:1.5;}
+
+.timeline-list{position:relative;padding-left:20px;}
+.timeline-list::before{content:'';position:absolute;left:4px;top:4px;bottom:4px;width:1px;background:var(--line);}
+.tl-item{position:relative;padding-bottom:20px;}
+.tl-item::before{content:'';position:absolute;left:-20px;top:3px;width:7px;height:7px;border-radius:50%;background:var(--ice);box-shadow:0 0 0 3px var(--black);}
+.tl-item .t{font-family:var(--font-mono);font-size:10px;color:var(--grey-400);}
+.tl-item .d{font-size:12.5px;color:var(--grey-100);margin-top:2px;}
+
+.empty-state{text-align:center;padding:50px 20px;color:var(--grey-400);}
+.empty-state .ic{font-size:26px;margin-bottom:10px;opacity:.5;}
+.empty-state p{font-size:12.5px;}
+
+.link-list a{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line-soft);font-size:12px;color:var(--ice);text-decoration:none;}
+.link-list a:hover{background:var(--panel-2);}
+
+/* connection map */
+.cmap-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;}
+.cmap-node{position:absolute;transform:translate(-50%,-50%);cursor:pointer;text-align:center;transition:filter .15s;}
+.cmap-node:hover .cnb{border-color:var(--ice);}
+.cmap-node .cnb{width:78px;padding:8px 6px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;}
+.cmap-node .ci{font-size:15px;}
+.cmap-node .cl{font-size:9.5px;color:var(--grey-100);margin-top:3px;line-height:1.2;font-weight:600;word-break:break-word;}
+.cmap-node .ct{font-family:var(--font-mono);font-size:7.5px;color:var(--grey-400);letter-spacing:.06em;margin-top:2px;text-transform:uppercase;}
+.cmap-node.center .cnb{border-color:var(--ice);background:rgba(184,67,63,.08);}
+
+/* ---------- CONNECTION MAP PICKER ---------- */
+.cmap-pick-item{padding:10px 12px;border-radius:var(--radius);cursor:pointer;border-left:2px solid transparent;margin-bottom:2px;transition:all .12s;}
+.cmap-group-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;color:var(--grey-400);padding:14px 12px 6px;text-transform:uppercase;border-top:1px solid var(--line-soft);margin-top:4px;}
+.cmap-group-label:first-child{border-top:none;margin-top:0;}
+.cmap-group-empty{padding:4px 12px 8px;font-size:11px;color:var(--grey-400);}
+.cmap-pick-item:hover{background:var(--panel);}
+.cmap-pick-item.active{background:var(--panel);border-left-color:var(--ice);}
+.cmap-pick-item .n{font-size:12.5px;color:var(--grey-100);font-weight:600;}
+.cmap-pick-item.active .n{color:var(--white);}
+.cmap-pick-item .c{font-size:9.5px;color:var(--grey-400);margin-top:2px;}
+
+/* ---------- ATTACHMENTS ---------- */
+.att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;padding:12px 16px;}
+.att-card{position:relative;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+.att-thumb{aspect-ratio:1;background:var(--panel);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.att-thumb img,.att-thumb video{width:100%;height:100%;object-fit:cover;display:block;}
+.att-doc{font-size:26px;}
+.att-loading{font-size:9px;color:var(--grey-400);text-align:center;padding:0 6px;letter-spacing:.06em;}
+.att-meta{padding:6px 7px;}
+.att-name{font-size:10.5px;color:var(--grey-100);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.att-sub{font-size:9px;color:var(--grey-400);margin-top:2px;text-transform:uppercase;}
+.att-del{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;border:1px solid rgba(201,79,79,.4);background:rgba(5,5,6,.7);color:var(--alert-bright);font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;}
+.att-del:hover{background:var(--alert);color:#fff;}
+.attach-panel .panel-body{max-height:none;}
+
+/* ---------- LEAFLET MAP (tema escuro) ---------- */
+#addr-map{background:var(--panel-2);filter:grayscale(.15) brightness(.85) contrast(1.05);}
+.leaflet-control-zoom a{background:var(--panel-2)!important;color:var(--grey-100)!important;border-color:var(--line)!important;}
+.leaflet-control-attribution{background:rgba(5,5,6,.75)!important;color:var(--grey-400)!important;}
+.leaflet-control-attribution a{color:var(--grey-300)!important;}
+
+.perm-note{font-size:11px;color:var(--grey-400);background:var(--panel);border:1px dashed var(--line);padding:10px 12px;border-radius:var(--radius);margin-bottom:16px;}
+
+.access-denied{padding:60px 20px;text-align:center;color:var(--grey-400);}
+
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr;}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:230px;transform:translateX(-100%);transition:transform .2s;z-index:150;}
+  .sidebar.open{transform:translateX(0);}
+  .kpi-row{grid-template-columns:repeat(2,1fr);}
+  .dash-grid{grid-template-columns:1fr;}
+  .dossie-meta{grid-template-columns:repeat(2,1fr);}
+  .modal{width:94vw;}
+  .mobile-menu-btn{display:flex!important;}
+}
+.mobile-menu-btn{display:none;background:none;border:1px solid var(--line);color:var(--grey-100);width:32px;height:32px;border-radius:3px;align-items:center;justify-content:center;}
+#btn-logout{display:none!important} .login-restricted{display:none} 
+</style>
 </head>
 <body>
-  <div id="app" class="app">
-    <aside id="sidebar" class="sidebar" aria-label="Navegação principal">
-      <div class="brand">
-        <div class="brand-mark">BI<span class="brand-corner"></span></div>
-        <div class="brand-copy"><strong>BLACK<br>INVESTIGATION</strong><span>MAFIACORP / INTELLIGENCE</span></div>
+
+<div id="login-screen">
+  <div class="login-grid"></div>
+  <div class="login-scan"></div>
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="mark"><span>BI</span></div>
+      <h1>BLACK INVESTIGATION</h1>
+      <div class="sub">Intelligence System</div>
+    </div>
+    <div class="login-restricted">⚠ ACESSO RESTRITO</div>
+    <div class="login-error" id="login-error"></div>
+    <form id="login-form" autocomplete="off">
+      <input type="text" name="fake_user_trap" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" tabindex="-1" autocomplete="username">
+      <input type="password" name="fake_pass_trap" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" tabindex="-1" autocomplete="new-password">
+      <div class="field"><label>Usuário</label><input type="text" id="login-user" name="bi_operator_id_x7" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore required></div>
+      <div class="field"><label>Senha</label><input type="password" id="login-pass" name="bi_access_key_x7" autocomplete="new-password" spellcheck="false" data-lpignore="true" data-1p-ignore required></div>
+      <button type="submit" class="btn btn-primary" id="login-btn">Autenticar</button>
+    </form>
+    <div class="login-footnote">Todas as atividades realizadas neste sistema são registradas.<br>Dados armazenados de forma persistente e compartilhada com a equipe.</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sb-brand">
+        <div class="mark"><span>BI</span></div>
+        <div class="sb-brand-text"><div class="name">BLACK INVESTIGATION</div><div class="tag">INTELLIGENCE SYS</div></div>
       </div>
-      <div class="side-caption">SISTEMA DE INTELIGÊNCIA</div>
-      <nav id="navigation" class="navigation"></nav>
-      <div class="sidebar-foot">
-        <div class="access"><span class="pulse"></span><div><strong>ACESSO DE VISUALIZAÇÃO</strong><span>Ambiente demonstrativo</span></div></div>
-        <div class="sidebar-license">© 2026 MAFIACORP<br>BLACK INVESTIGATION</div>
+      <nav class="sb-nav" id="sb-nav"></nav>
+      <div class="sb-foot">
+        <div class="sb-user">
+          <div class="av" id="sb-av"></div>
+          <div class="info"><div class="n" id="sb-name"></div><div class="r" id="sb-role"></div></div>
+        </div>
+        <button class="sb-logout" id="btn-logout">↩ ENCERRAR SESSÃO</button>
       </div>
     </aside>
-    <div id="mobile-scrim" class="mobile-scrim" hidden></div>
-    <div class="workspace">
-      <header class="topbar">
-        <button id="menu-toggle" class="icon-button mobile-only" aria-label="Abrir menu" aria-expanded="false">☰</button>
-        <div class="breadcrumbs"><span>MAFIACORP</span><i>/</i><strong id="breadcrumb">COMMAND CENTER</strong></div>
-        <div class="topbar-right">
-          <div class="topbar-search"><span class="search-icon">⌕</span><input id="search" type="search" placeholder="Buscar registros..." aria-label="Buscar registros" autocomplete="off"><kbd>CTRL K</kbd></div>
-          <span class="read-only-chip">SOMENTE LEITURA</span>
-          <time id="clock" aria-label="Horário atual"></time>
+    <div class="main">
+      <div class="topbar">
+        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        <div class="crumb" id="crumb"></div>
+        <div class="search-wrap">
+          <span class="sic">⌕</span>
+          <input type="text" id="global-search" placeholder="Pesquisar no Black Investigation...">
+          <div class="search-results" id="search-results"></div>
         </div>
-      </header>
-      <div class="notice"><span class="notice-dot"></span><strong>AMBIENTE DEMONSTRATIVO</strong><span>Dados fictícios para apresentação pública. Nenhum registro confidencial é carregado.</span><span class="notice-right">BUILD 1.0</span></div>
-      <main id="content" class="main-content" tabindex="-1"></main>
-      <footer class="footer"><span>BLACK INVESTIGATION <b>•</b> MAFIACORP</span><span>INTERFACE DE VISUALIZAÇÃO / PT-BR</span></footer>
+        <div class="clock" id="clock"></div>
+      </div>
+      <div id="bi-demo-warning" role="status" style="background:#22100e;border-bottom:1px solid #85413b;color:#efb0aa;padding:10px 22px;font:11px/1.5 var(--font-mono)"><strong>DEMONSTRAÇÃO PÚBLICA • SOMENTE LEITURA</strong> &nbsp; Registros fictícios. A conexão autenticada ao Supabase será habilitada após a correção das permissões do banco.</div>
+      <div class="view" id="view"></div>
     </div>
   </div>
-  <div id="modal-root" class="modal-root" hidden></div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal"></div>
+</div>
+<div class="toast-stack" id="toast-stack"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ CONSTANTS ============ */
+const ROLES = {
+  admin:{label:'ADMINISTRADOR', level:4},
+  chefe:{label:'CHEFE DE INVESTIGAÇÃO', level:3},
+  investigador:{label:'INVESTIGADOR', level:2},
+  observador:{label:'OBSERVADOR', level:1},
+};
+const STORAGE_KEY = 'bi_core_db_v1';
+
+/* ============ SUPABASE CONFIG ============ */
+/* Preencha com os dados do SEU projeto Supabase (Project Settings > API). */
+const SUPABASE_URL = ''; // Integracao remota nao ativada nesta demonstracao.
+const SUPABASE_ANON_KEY = ''; // Nunca expor banco sem RLS e Auth.
+const ATTACHMENTS_BUCKET = 'attachments';
+const sb = null; // Dados de demonstracao; conexao real requer RLS/Auth no Supabase.
+
+
+const ENUM = {
+  invStatus:['ATIVA','EM ANÁLISE','SUSPENSA','CONCLUÍDA','ARQUIVADA'],
+  priority:['BAIXA','MÉDIA','ALTA','CRÍTICA'],
+  suspectStatus:['MONITORADO','SUSPEITO','ALVO','PROCURADO','DETIDO','FORAGIDO','INATIVO','ARQUIVADO'],
+  interestLevel:['BAIXO','MÉDIO','ALTO','CRÍTICO'],
+  classification:['PÚBLICO','RESTRITO','CONFIDENCIAL','SIGILOSO'],
+  addressType:['RESIDÊNCIA','EMPRESA','GALPÃO','PONTO DE ENCONTRO','LOCAL DE OPERAÇÃO','OUTRO'],
+  opStatus:['PLANEJAMENTO','ATIVA','PAUSADA','CONCLUÍDA','CANCELADA'],
+  evidenceType:['FOTO','VÍDEO','DOCUMENTO','LINK','ÁUDIO','OUTRO'],
+  teamRole:['CHEFE DE INVESTIGAÇÃO','INVESTIGADOR','ANALISTA','OPERACIONAL','OBSERVADOR','ADMINISTRADOR'],
+  teamStatus:['ONLINE','EM OPERAÇÃO','INDISPONÍVEL','OFFLINE'],
+  reportType:['RELATÓRIO INVESTIGATIVO','RELATÓRIO OPERACIONAL','RELATÓRIO DE OCORRÊNCIA','RELATÓRIO DE INTELIGÊNCIA'],
+};
+
+/* ============ STATE ============ */
+let DB = null;
+let CURRENT_USER = null;
+let CURRENT_VIEW = 'dashboard';
+let CURRENT_PARAMS = {};
+let DOSSIE_TAB = 'overview';
+let DB_VERSION = null;
+
+/* ============ UTIL ============ */
+function uid(){ return 'x'+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); }
+function nowIso(){ return new Date().toISOString(); }
+function fmtDate(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString('pt-BR'); }
+function fmtTime(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function fmtDateTime(iso){ if(!iso) return '—'; return fmtDate(iso)+' — '+fmtTime(iso); }
+function esc(s){ return (s===undefined||s===null)?'':String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function sha256(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function toast(msg, isErr){
+  const stack = document.getElementById('toast-stack');
+  const el = document.createElement('div');
+  el.className = 'toast'+(isErr?' err':'');
+  el.textContent = msg;
+  stack.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); }, 3200);
+}
+
+/* ============ PERMISSIONS ============ */
+function roleLevel(role){ return (ROLES[role]||{level:0}).level; }
+function isObserver(){ return CURRENT_USER && CURRENT_USER.role==='observador'; }
+function canEdit(){ return CURRENT_USER && roleLevel(CURRENT_USER.role) >= 2; } // investigador+
+function canManageOps(){ return CURRENT_USER && roleLevel(CURRENT_USER.role) >= 3; } // chefe+
+function canManageUsers(){ return CURRENT_USER && CURRENT_USER.role==='admin'; }
+function canArchive(){ return canEdit(); }
+function canPermanentDelete(){ return canManageUsers(); }
+
+/* ============ PERSISTENCE (DEMO PUBLICA SEM DADOS REAIS) ============ */
+async function loadDB(){ return false; }
+async function saveDB(){ return; } // Nenhuma gravação externa ou local nesta demonstração.
+/* ============ SEED DATA ============ */
+async function seedDB(){
+  const passHash = null; // Nao publicar credenciais de acesso
+  DB = {
+    users:[
+      {id:'u_admin', username:'root_bi', passwordHash:passHash, name:'Administrador do Sistema', codename:'ROOT', role:'admin', specialty:'Administração de Sistema', contact:'', status:'ONLINE', lastAccess:nowIso(), createdAt:nowIso()},
+    ],
+    investigations:[], suspects:[], vehicles:[], addresses:[], contacts:[], associates:[],
+    evidence:[], operations:[], reports:[], notes:[], timeline:[], audit:[], attachments:[], factions:[],
+    seq:{ inv:0, evd:0 },
+  };
+  seedDemoData();
+  await saveDB();
+}
+
+function nextCaseId(){
+  DB.seq.inv += 1;
+  return 'BLI-'+new Date().getFullYear()+'-'+String(DB.seq.inv).padStart(5,'0');
+}
+function nextEvdId(){
+  DB.seq.evd += 1;
+  return 'EVD-'+new Date().getFullYear()+'-'+String(DB.seq.evd).padStart(6,'0');
+}
+
+function logTimeline(desc, refType, refId){
+  DB.timeline.unshift({id:uid(), ts:nowIso(), desc, refType:refType||null, refId:refId||null, actor: CURRENT_USER? (CURRENT_USER.codename||CURRENT_USER.name) : 'SISTEMA'});
+  if(DB.timeline.length>500) DB.timeline.length = 500;
+}
+function logAudit(action, detail){
+  DB.audit.unshift({id:uid(), ts:nowIso(), user: CURRENT_USER? (CURRENT_USER.codename||CURRENT_USER.name):'—', action, detail: detail||''});
+  if(DB.audit.length>800) DB.audit.length = 800;
+}
+
+function seedDemoData(){
+  const d = DB;
+  const days = n => new Date(Date.now()-n*864e5).toISOString();
+
+  // team (2 more users besides admin)
+  const teamSeed = [
+    {id:'u_lima', username:'lima', name:'Rafael Lima', codename:'LIMA', role:'chefe', specialty:'Crimes Organizados', contact:'(11) 90000-1122', status:'ONLINE'},
+    {id:'u_costa', username:'costa', name:'Bianca Costa', codename:'COSTA', role:'investigador', specialty:'Vigilância e Campo', contact:'(11) 90000-3344', status:'EM OPERAÇÃO'},
+    {id:'u_reis', username:'reis', name:'Diego Reis', codename:'REIS', role:'investigador', specialty:'Análise Financeira', contact:'(11) 90000-5566', status:'OFFLINE'},
+  ];
+  teamSeed.forEach(u=>{ u.passwordHash=null; u.lastAccess=days(2); u.createdAt=days(40); d.users.push(u); });
+
+  // investigations
+  const inv1 = {id:uid(), caseId:nextCaseId(), name:'OPERAÇÃO BLACKOUT', description:'Investigação sobre rede de receptação de veículos e distribuição ligada a um galpão na zona industrial.', responsibleId:'u_lima', status:'ATIVA', priority:'CRÍTICA', openedAt:days(30), updatedAt:days(0), archived:false};
+  const inv2 = {id:uid(), caseId:nextCaseId(), name:'DOSSIÊ SILÊNCIO', description:'Apuração de movimentações financeiras suspeitas entre associados de uma organização de fachada.', responsibleId:'u_lima', status:'EM ANÁLISE', priority:'ALTA', openedAt:days(20), updatedAt:days(1), archived:false};
+  const inv3 = {id:uid(), caseId:nextCaseId(), name:'CASO MERIDIAN', description:'Monitoramento de ponto de encontro utilizado para negociações irregulares.', responsibleId:'u_costa', status:'ATIVA', priority:'MÉDIA', openedAt:days(14), updatedAt:days(2), archived:false};
+  [inv1,inv2,inv3].forEach(i=>d.investigations.push(i));
+  for(let i=4;i<=10;i++){
+    d.investigations.push({id:uid(), caseId:nextCaseId(), name:'CASO REFERÊNCIA '+i, description:'Registro de investigação de demonstração para preenchimento do sistema.', responsibleId: i%2? 'u_lima':'u_costa', status: ENUM.invStatus[i%5], priority: ENUM.priority[i%4], openedAt:days(10+i), updatedAt:days(i), archived: i>8});
+  }
+
+  // suspects
+  const s1 = {id:uid(), name:'Marcus Almeida', alias:'Marcão', photoUrl:'', birthDate:'1988-04-12', description:'Suspeito de coordenar a logística de veículos receptados na Operação Blackout.', status:'ALVO', level:'CRÍTICO', classification:'SIGILOSO', notes:'Movimentação frequente entre o galpão e o centro.', investigationId:inv1.id, archived:false};
+  const s2 = {id:uid(), name:'João Silva', alias:'Joãozinho', photoUrl:'', birthDate:'1991-09-02', description:'Associado direto de Marcus Almeida, responsável por transporte.', status:'SUSPEITO', level:'ALTO', classification:'RESTRITO', notes:'', investigationId:inv1.id, archived:false};
+  const s3 = {id:uid(), name:'Helena Duarte', alias:'', photoUrl:'', birthDate:'1979-01-30', description:'Possível operadora financeira do esquema investigado no Dossiê Silêncio.', status:'MONITORADO', level:'MÉDIO', classification:'CONFIDENCIAL', notes:'', investigationId:inv2.id, archived:false};
+  [s1,s2,s3].forEach(s=>d.suspects.push(s));
+  const names=['Ricardo Nunes','Patrícia Farias','Bruno Teles','Alan Vasques','Camila Rocha','Diego Prado','Yuri Bastos'];
+  names.forEach((n,idx)=>{
+    d.suspects.push({id:uid(), name:n, alias:'', photoUrl:'', birthDate:'', description:'Registro de investigado vinculado às investigações em andamento.', status:ENUM.suspectStatus[idx%ENUM.suspectStatus.length], level:ENUM.interestLevel[idx%4], classification:ENUM.classification[idx%4], notes:'', investigationId:[inv1.id,inv2.id,inv3.id][idx%3], archived:false});
+  });
+
+  // vehicles
+  const v1 = {id:uid(), plate:'ABC-1234', brand:'BMW', model:'M4', color:'Preto', year:'2022', photoUrl:'', ownerId:s1.id, status:'MONITORADO', notes:'Visto recorrentemente próximo ao Galpão 04.', investigationId:inv1.id, archived:false};
+  d.vehicles.push(v1);
+  const vSeed=[['BRA-2E19','Toyota','Corolla','Prata','2019'],['XYZ-9821','Honda','Civic','Branco','2021'],['JJK-4410','Fiat','Toro','Cinza','2020'],['MNB-7712','Chevrolet','Onix','Vermelho','2018'],['PLM-0033','Hyundai','HB20','Azul','2023'],['QRT-5541','VW','Amarok','Preto','2022'],['ZXC-8890','Renault','Duster','Prata','2017']];
+  vSeed.forEach((v,idx)=>{
+    d.vehicles.push({id:uid(), plate:v[0], brand:v[1], model:v[2], color:v[3], year:v[4], photoUrl:'', ownerId: idx===0?s2.id: (idx===1?s3.id:''), status:'REGISTRADO', notes:'', investigationId:[inv1.id,inv2.id,inv3.id][idx%3], archived:false});
+  });
+
+  // addresses
+  const a1 = {id:uid(), name:'Galpão 04', address:'Rod. Industrial, km 8, Zona Norte', description:'Galpão utilizado como ponto de armazenamento de veículos.', type:'GALPÃO', notes:'Movimentação intensa entre 22h e 03h.', investigationId:inv1.id, archived:false};
+  d.addresses.push(a1);
+  const addrSeed=[['Residência Almeida','Rua das Palmeiras, 210','RESIDÊNCIA'],['Escritório Duarte & Assoc.','Av. Central, 1500, sala 802','EMPRESA'],['Bar do Ponto','Rua 7 de Setembro, 44','PONTO DE ENCONTRO'],['Depósito Meridian','Estrada Velha, 900','LOCAL DE OPERAÇÃO'],['Residência Silva','Rua Bela Vista, 77','RESIDÊNCIA'],['Estacionamento Norte','Av. Marginal, 300','OUTRO'],['Oficina Central','Rua dos Mecânicos, 12','EMPRESA'],['Casa de Apoio','Travessa das Acácias, 5','OUTRO'],['Terminal de Cargas','Rod. BR-101, km 22','LOCAL DE OPERAÇÃO']];
+  const addrSuspectMap = {0:s1.id, 1:s3.id, 4:s2.id};
+  addrSeed.forEach((a,idx)=>{
+    d.addresses.push({id:uid(), name:a[0], address:a[1], description:'Local relacionado às investigações em andamento.', type:a[2], suspectId:addrSuspectMap[idx]||'', notes:'', investigationId:[inv1.id,inv2.id,inv3.id][idx%3], archived:false});
+  });
+
+  // contacts
+  const contactSeed=[['Central de Informantes','(11) 90000-0000','Informante','Colaborador',s1.id],['Vizinho — Zona Norte','(11) 91111-2222','Testemunha','Vizinhança',s1.id],['Contato Comercial','(11) 92222-3333','Comercial','Fornecedor',s3.id],['Irmão de João','(11) 93333-4444','Familiar','Parente',s2.id]];
+  contactSeed.forEach(c=>d.contacts.push({id:uid(), name:c[0], phone:c[1], type:c[2], relation:c[3], suspectId:c[4], notes:'', investigationId:inv1.id, archived:false}));
+  for(let i=0;i<12;i++){
+    d.contacts.push({id:uid(), name:'Contato de Registro '+(i+1), phone:'(11) 9'+(3000+i)+'-'+(1000+i*7), type: i%2?'Pessoal':'Profissional', relation:'A verificar', suspectId:'', notes:'', investigationId:[inv1.id,inv2.id,inv3.id][i%3], archived:false});
+  }
+
+  // associates
+  const assocSeed=[['Carlos Bezerra','Carlão','Fornecedor de veículos','ALTA',inv1.id,s1.id],['Ana Prates','','Possível laranja financeiro','MÉDIA',inv2.id,s3.id],['Igor Matos','Igor M.','Contato do ponto de encontro','BAIXA',inv3.id,'']];
+  assocSeed.forEach(a=>d.associates.push({id:uid(), name:a[0], alias:a[1], photoUrl:'', relation:a[2], relevance:a[3], suspectId:a[5]||'', notes:'', investigationId:a[4], archived:false}));
+
+  // operations
+  const op1 = {id:uid(), code:'OP-BLACKOUT-01', name:'Cerco ao Galpão 04', objective:'Confirmar rota de receptação e mapear veículos armazenados.', description:'Operação de vigilância contínua no perímetro do Galpão 04.', status:'ATIVA', priority:'CRÍTICA', startAt:days(12), endAt:'', responsibleId:'u_lima', investigationId:inv1.id, notes:'', archived:false};
+  d.operations.push(op1);
+  const opSeed=[['OP-SILENCIO-01','Rastreamento Financeiro','Mapear contas ligadas a Helena Duarte','EM ANÁLISE','ALTA',inv2.id,'u_lima'],['OP-MERIDIAN-01','Vigilância Bar do Ponto','Registrar frequência do ponto de encontro','ATIVA','MÉDIA',inv3.id,'u_costa'],['OP-BLACKOUT-02','Verificação de Rota','Confirmar trajeto entre galpão e depósito','PLANEJAMENTO','ALTA',inv1.id,'u_reis'],['OP-REF-04','Diligência de Campo','Operação de demonstração','CONCLUÍDA','BAIXA',inv1.id,'u_costa'],['OP-REF-05','Diligência de Campo','Operação de demonstração','PAUSADA','MÉDIA',inv2.id,'u_lima']];
+  opSeed.forEach(o=>d.operations.push({id:uid(), code:o[0], name:o[1], objective:o[2], description:'Registro operacional de demonstração.', status:o[3], priority:o[4], startAt:days(8), endAt:'', responsibleId:o[6], investigationId:o[5], notes:'', archived:false}));
+
+  // evidence
+  const e1 = {id:uid(), evdId:nextEvdId(), name:'Foto — Chegada ao Galpão 04', type:'FOTO', description:'Registro fotográfico do veículo BMW M4 (ABC-1234) chegando ao galpão às 23h14.', date:days(3), location:'Galpão 04', investigationId:inv1.id, suspectId:s1.id, operationId:op1.id, responsibleId:'u_costa', classification:'SIGILOSO', url:'', notes:'', archived:false};
+  const e2 = {id:uid(), evdId:nextEvdId(), name:'Extrato — Movimentação Suspeita', type:'DOCUMENTO', description:'Documento com registro de transferências entre contas ligadas a Helena Duarte.', date:days(5), location:'—', investigationId:inv2.id, suspectId:s3.id, operationId:'', responsibleId:'u_lima', classification:'CONFIDENCIAL', url:'', notes:'', archived:false};
+  const e3 = {id:uid(), evdId:nextEvdId(), name:'Link — Perfil Público Relacionado', type:'LINK', description:'Perfil em rede social associado a um dos investigados, utilizado para checagem de rotina.', date:days(6), location:'—', investigationId:inv3.id, suspectId:'', operationId:'', responsibleId:'u_costa', classification:'RESTRITO', url:'https://example.com/perfil-publico', notes:'', archived:false};
+  [e1,e2,e3].forEach(e=>d.evidence.push(e));
+  for(let i=0;i<17;i++){
+    d.evidence.push({id:uid(), evdId:nextEvdId(), name:'Evidência de Registro '+(i+1), type:ENUM.evidenceType[i%ENUM.evidenceType.length], description:'Item de evidência cadastrado para fins de demonstração do sistema.', date:days(i+1), location:'—', investigationId:[inv1.id,inv2.id,inv3.id][i%3], suspectId:'', operationId:'', responsibleId:['u_lima','u_costa','u_reis'][i%3], classification:ENUM.classification[i%4], url: i%4===0?'https://example.com/evidencia-'+i:'', notes:'', archived:false});
+  }
+
+  // reports
+  d.reports.push({id:uid(), title:'Relatório Preliminar — Operação Blackout', author:'u_lima', date:days(4), investigationId:inv1.id, type:'RELATÓRIO INVESTIGATIVO', description:'Síntese das atividades realizadas na primeira fase da operação.', conclusion:'Recomenda-se manter vigilância contínua no Galpão 04 e ampliar mapeamento de veículos.', classification:'SIGILOSO'});
+  d.reports.push({id:uid(), title:'Relatório de Inteligência — Dossiê Silêncio', author:'u_lima', date:days(2), investigationId:inv2.id, type:'RELATÓRIO DE INTELIGÊNCIA', description:'Consolidação de evidências financeiras coletadas até o momento.', conclusion:'Indícios suficientes para aprofundar rastreamento bancário.', classification:'CONFIDENCIAL'});
+
+  // notes
+  d.notes.push({id:uid(), text:'Verificar relação entre veículo ABC-1234 e endereço do galpão.', investigationId:inv1.id, pinned:true, classification:'RESTRITO', createdBy:'LIMA', createdAt:days(3)});
+  d.notes.push({id:uid(), text:'Confirmar horário de maior movimentação no Bar do Ponto antes da próxima diligência.', investigationId:inv3.id, pinned:false, classification:'PÚBLICO', createdBy:'COSTA', createdAt:days(1)});
+
+  // timeline (chronological, most recent first)
+  const tl=[
+    [days(0),'Investigador LIMA adicionou um novo veículo ao dossiê '+inv1.caseId+'.', 'investigation', inv1.id],
+    [days(0),'Operação BLACKOUT atualizada.', 'operation', op1.id],
+    [days(1),'Nova evidência adicionada ao caso '+inv2.caseId+'.', 'investigation', inv2.id],
+    [days(1),'Investigado "Marcus Almeida" atualizado.', 'suspect', s1.id],
+    [days(2),'Operação "Vigilância Bar do Ponto" registrada.', 'operation', op1.id],
+    [days(3),'Evidência EVD adicionada ao dossiê '+inv1.caseId+'.', 'investigation', inv1.id],
+    [days(4),'Relatório preliminar da Operação Blackout gerado.', 'investigation', inv1.id],
+  ];
+  tl.forEach(t=>d.timeline.push({id:uid(), ts:t[0], desc:t[1], refType:t[2], refId:t[3], actor:'LIMA'}));
+  for(let i=0;i<13;i++){
+    d.timeline.push({id:uid(), ts:days(5+i), desc:'Registro de atividade de demonstração no sistema.', refType:'system', refId:null, actor:['LIMA','COSTA','REIS'][i%3]});
+  }
+
+  // audit
+  const auditSeed=[['LIMA','Visualizou dossiê '+inv1.caseId+'.'],['LIMA','Adicionou evidência '+e1.evdId+'.'],['COSTA','Efetuou login no sistema.'],['REIS','Atualizou cadastro de investigado.'],['LIMA','Criou operação '+op1.code+'.']];
+  auditSeed.forEach((a,idx)=>d.audit.push({id:uid(), ts:days(idx), user:a[0], action:a[1], detail:''}));
+}
+
+/* ============ LOOKUP HELPERS ============ */
+function userById(id){ return DB.users.find(u=>u.id===id); }
+function userName(id){ const u=userById(id); return u? (u.codename||u.name) : '—'; }
+function invById(id){ return DB.investigations.find(i=>i.id===id); }
+function invLabel(id){ const i=invById(id); return i? i.caseId : '—'; }
+function suspectById(id){ return DB.suspects.find(s=>s.id===id); }
+function opById(id){ return DB.operations.find(o=>o.id===id); }
+
+/* ============ BADGE HELPERS ============ */
+function statusBadgeClass(status){
+  const red=['CRÍTICA','ALVO','PROCURADO','ARQUIVADA','ARQUIVADO','CANCELADA','SIGILOSO','FORAGIDO'];
+  const ok=['CONCLUÍDA','ATIVA','ONLINE','DETIDO'];
+  const warn=['ALTA','EM ANÁLISE','SUSPENSA','PAUSADA','EM OPERAÇÃO','MÉDIA','RESTRITO','CONFIDENCIAL'];
+  if(red.includes(status)) return 'b-red';
+  if(ok.includes(status)) return 'b-ok';
+  if(warn.includes(status)) return 'b-warn';
+  return 'b-grey';
+}
+function badge(status){ return `<span class="badge ${statusBadgeClass(status)}"><span class="dot"></span>${esc(status)}</span>`; }
+
+/* ============ NAV CONFIG ============ */
+const NAV = [
+  {group:'GERAL', items:[
+    {id:'dashboard', label:'Dashboard', icon:'◆'},
+  ]},
+  {group:'INVESTIGAÇÃO', items:[
+    {id:'investigations', label:'Investigações', icon:'▣'},
+    {id:'suspects', label:'Investigados', icon:'☉'},
+    {id:'vehicles', label:'Veículos', icon:'▤'},
+    {id:'addresses', label:'Locais', icon:'⌂'},
+    {id:'contacts', label:'Contatos', icon:'☏'},
+    {id:'associates', label:'Associados', icon:'⚭'},
+    {id:'factions', label:'Facções', icon:'⚔'},
+    {id:'evidence', label:'Evidências', icon:'⌘'},
+    {id:'operations', label:'Operações', icon:'⚑'},
+  ]},
+  {group:'GESTÃO', items:[
+    {id:'team', label:'Equipe', icon:'☰'},
+    {id:'reports', label:'Relatórios', icon:'▦'},
+    {id:'connections', label:'Connection Map', icon:'⬡'},
+    {id:'audit', label:'Auditoria', icon:'◈'},
+  ]},
+];
+const VIEW_LABELS = {dashboard:'COMMAND CENTER', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
+
+function renderSidebar(){
+  const nav = document.getElementById('sb-nav');
+  nav.innerHTML = NAV.map(g=>`
+    <div class="sb-group-label">${g.group}</div>
+    ${g.items.map(it=>`<div class="sb-item ${CURRENT_VIEW===it.id?'active':''}" data-nav="${it.id}"><span class="ic">${it.icon}</span>${it.label}</div>`).join('')}
+  `).join('');
+  nav.querySelectorAll('.sb-item').forEach(el=>{
+    el.addEventListener('click', ()=>{ navigate(el.dataset.nav); document.getElementById('sidebar').classList.remove('open'); });
+  });
+  document.getElementById('sb-av').textContent = (CURRENT_USER.codename||CURRENT_USER.name||'?').slice(0,2).toUpperCase();
+  document.getElementById('sb-name').textContent = CURRENT_USER.codename||CURRENT_USER.name;
+  document.getElementById('sb-role').textContent = ROLES[CURRENT_USER.role].label;
+}
+
+function navigate(view, params){
+  CURRENT_VIEW = view;
+  CURRENT_PARAMS = params||{};
+  DOSSIE_TAB = 'overview';
+  BULK_SELECT_MODE = {};
+  document.getElementById('crumb').innerHTML = `BLACK INVESTIGATION <span style="color:var(--grey-400)">//</span> <b>${VIEW_LABELS[view]||view.toUpperCase()}</b>`;
+  renderSidebar();
+  renderView();
+  document.getElementById('view').scrollTop = 0;
+}
+
+/* ============ CLOCK ============ */
+function tickClock(){
+  const el = document.getElementById('clock');
+  if(el) el.textContent = new Date().toLocaleString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).toUpperCase();
+}
+
+/* ============ RENDER ROUTER ============ */
+function renderView(){
+  const v = document.getElementById('view');
+  switch(CURRENT_VIEW){
+    case 'dashboard': v.innerHTML = renderDashboard(); wireDashboard(); break;
+    case 'investigations': v.innerHTML = renderInvestigationsList(); wireGenericList('investigations'); break;
+    case 'investigation-detail': v.innerHTML = renderInvestigationDetail(CURRENT_PARAMS.id); wireInvestigationDetail(CURRENT_PARAMS.id); break;
+    case 'suspects': v.innerHTML = renderEntityList('suspects'); wireGenericList('suspects'); break;
+    case 'suspect-detail': v.innerHTML = renderSuspectDetail(CURRENT_PARAMS.id); wireSuspectDetail(CURRENT_PARAMS.id); break;
+    case 'vehicles': v.innerHTML = renderEntityList('vehicles'); wireGenericList('vehicles'); break;
+    case 'addresses': v.innerHTML = renderEntityList('addresses'); wireGenericList('addresses'); break;
+    case 'contacts': v.innerHTML = renderEntityList('contacts'); wireGenericList('contacts'); break;
+    case 'associates': v.innerHTML = renderEntityList('associates'); wireGenericList('associates'); break;
+    case 'factions': v.innerHTML = renderEntityList('factions'); wireGenericList('factions'); break;
+    case 'evidence': v.innerHTML = renderEntityList('evidence'); wireGenericList('evidence'); break;
+    case 'operations': v.innerHTML = renderEntityList('operations'); wireGenericList('operations'); break;
+    case 'team': v.innerHTML = renderTeam(); wireTeam(); break;
+    case 'reports': v.innerHTML = renderReports(); wireReports(); break;
+    case 'connections': v.innerHTML = renderConnectionsPicker(); wireConnectionsPicker(); break;
+    case 'audit': v.innerHTML = renderAudit(); break;
+    default: v.innerHTML = '<div class="empty-state">View não encontrada.</div>';
+  }
+}
+
+/* ============ DASHBOARD ============ */
+function renderDashboard(){
+  const activeInv = DB.investigations.filter(i=>!i.archived && i.status!=='ARQUIVADA').length;
+  const suspects = DB.suspects.filter(s=>!s.archived).length;
+  const activeOps = DB.operations.filter(o=>!o.archived && o.status==='ATIVA').length;
+  const evidenceCount = DB.evidence.filter(e=>!e.archived).length;
+  const onlineTeam = DB.users.filter(u=>u.status==='ONLINE').length;
+
+  const statusCounts = {};
+  ENUM.invStatus.forEach(s=>statusCounts[s]=0);
+  DB.investigations.forEach(i=>{ if(statusCounts[i.status]!==undefined) statusCounts[i.status]++; });
+  const maxStatus = Math.max(1,...Object.values(statusCounts));
+
+  const activity = DB.timeline.slice(0,10);
+
+  return `
+  <div class="view-head">
+    <div>
+      <div class="view-title">BLACK INVESTIGATION <span class="n">// COMMAND CENTER</span></div>
+      <div class="view-sub">Visão geral operacional — atualizado em tempo real</div>
+    </div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi"><div class="lab">Investigações Ativas</div><div class="val">${activeInv}</div></div>
+    <div class="kpi"><div class="lab">Investigados</div><div class="val">${suspects}</div></div>
+    <div class="kpi"><div class="lab">Operações Ativas</div><div class="val">${activeOps}</div></div>
+    <div class="kpi"><div class="lab">Evidências</div><div class="val">${evidenceCount}</div></div>
+    <div class="kpi"><div class="lab">Investigadores Online</div><div class="val">${onlineTeam}</div></div>
+  </div>
+  <div class="dash-grid">
+    <div class="panel">
+      <div class="panel-head"><h3>ATIVIDADE RECENTE</h3></div>
+      <div class="panel-body">
+        ${activity.length? activity.map(a=>`
+          <div class="activity-row">
+            <div class="t">${fmtTime(a.ts)}</div>
+            <div class="d"><b>${esc(a.actor)}</b> ${esc(a.desc)}</div>
+          </div>`).join('') : '<div class="empty-state"><p>Nenhuma atividade registrada ainda.</p></div>'}
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>INVESTIGAÇÕES POR STATUS</h3></div>
+      <div class="panel-body" style="padding-top:10px;">
+        ${ENUM.invStatus.map(s=>`
+          <div class="mini-chart-row">
+            <div class="lbl">${s}</div>
+            <div class="mini-bar"><i style="width:${(statusCounts[s]/maxStatus*100)}%"></i></div>
+            <div class="num">${statusCounts[s]}</div>
+          </div>`).join('')}
+      </div>
+      <div class="panel-head" style="border-top:1px solid var(--line-soft);"><h3>OPERAÇÕES</h3></div>
+      <div class="panel-body">
+        ${DB.operations.filter(o=>!o.archived).slice(0,5).map(o=>`
+          <div class="activity-row" style="cursor:pointer" data-goto-op="${o.id}">
+            <div class="d" style="flex:1"><b>${esc(o.code)}</b> — ${esc(o.name)} ${badge(o.status)}</div>
+          </div>`).join('') || '<div class="empty-state"><p>Nenhuma operação cadastrada.</p></div>'}
+      </div>
+    </div>
+  </div>`;
+}
+function wireDashboard(){
+  document.querySelectorAll('[data-goto-op]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const op = opById(el.dataset.gotoOp);
+      if(op && op.investigationId) navigate('investigation-detail', {id:op.investigationId});
+    });
+  });
+}
+
+/* ============ ENTITY SCHEMAS ============ */
+function schemaFor(type){
+  const S = {
+    investigations:{
+      label:'Investigações', singular:'Investigação',
+      fields:[
+        {key:'name', label:'Nome da Investigação', type:'text', required:true},
+        {key:'description', label:'Descrição', type:'textarea'},
+        {key:'responsibleId', label:'Responsável', type:'ref', ref:'users'},
+        {key:'status', label:'Status', type:'select', options:ENUM.invStatus},
+        {key:'priority', label:'Prioridade', type:'select', options:ENUM.priority},
+      ],
+      listColumns:[
+        {key:'caseId', label:'Case ID', render:r=>`<span class="mono">${esc(r.caseId)}</span>`},
+        {key:'name', label:'Nome'},
+        {key:'status', label:'Status', render:r=>badge(r.status)},
+        {key:'priority', label:'Prioridade', render:r=>badge(r.priority)},
+        {key:'responsibleId', label:'Responsável', render:r=>esc(userName(r.responsibleId))},
+        {key:'updatedAt', label:'Atualizado', render:r=>fmtDate(r.updatedAt)},
+      ],
+    },
+    suspects:{
+      label:'Investigados', singular:'Investigado',
+      fields:[
+        {key:'name', label:'Nome', type:'text', required:true},
+        {key:'alias', label:'Apelido', type:'text'},
+        {key:'photoUrl', label:'URL da Foto', type:'text'},
+        {key:'birthDate', label:'Data de Nascimento', type:'date'},
+        {key:'description', label:'Descrição', type:'textarea'},
+        {key:'status', label:'Status', type:'select', options:ENUM.suspectStatus},
+        {key:'level', label:'Nível de Interesse', type:'select', options:ENUM.interestLevel},
+        {key:'classification', label:'Classificação', type:'select', options:ENUM.classification},
+        {key:'factionId', label:'Facção', type:'ref', ref:'factions'},
+        {key:'investigationId', label:'Investigação Relacionada', type:'ref', ref:'investigations'},
+        {key:'notes', label:'Observações', type:'textarea'},
+      ],
+      listColumns:[
+        {key:'name', label:'Nome'},
+        {key:'alias', label:'Apelido'},
+        {key:'status', label:'Status', render:r=>badge(r.status)},
+        {key:'level', label:'Nível', render:r=>badge(r.level)},
+        {key:'factionId', label:'Facção', render:r=>{ const f=DB.factions.find(x=>x.id===r.factionId); return f?esc(f.name):'—'; }},
+        {key:'investigationId', label:'Caso', render:r=>esc(invLabel(r.investigationId))},
+      ],
+    },
+    vehicles:{
+      label:'Veículos', singular:'Veículo',
+      fields:[
+        {key:'plate', label:'Placa', type:'text', required:true},
+        {key:'brand', label:'Marca', type:'text'},
+        {key:'model', label:'Modelo', type:'text'},
+        {key:'color', label:'Cor', type:'text'},
+        {key:'year', label:'Ano', type:'text'},
+        {key:'photoUrl', label:'URL da Foto', type:'text'},
+        {key:'ownerId', label:'Proprietário / Investigado', type:'ref', ref:'suspects'},
+        {key:'status', label:'Status', type:'select', options:['REGISTRADO','MONITORADO','APREENDIDO','ARQUIVADO']},
+        {key:'investigationId', label:'Investigação Relacionada', type:'ref', ref:'investigations'},
+        {key:'notes', label:'Observações', type:'textarea'},
+      ],
+      listColumns:[
+        {key:'plate', label:'Placa', render:r=>`<span class="mono">${esc(r.plate)}</span>`},
+        {key:'brand', label:'Marca'}, {key:'model', label:'Modelo'}, {key:'color', label:'Cor'},
+        {key:'status', label:'Status', render:r=>badge(r.status)},
+        {key:'ownerId', label:'Vinculado a', render:r=>{ const s=suspectById(r.ownerId); return s?esc(s.name):'—'; }},
+      ],
+    },
+    addresses:{
+      label:'Locais', singular:'Local',
+      fields:[
+        {key:'name', label:'Nome do Local', type:'text', required:true},
+        {key:'address', label:'Endereço', type:'text'},
+        {key:'type', label:'Tipo', type:'select', options:ENUM.addressType},
+        {key:'description', label:'Descrição', type:'textarea'},
+        {key:'suspectId', label:'Investigado Relacionado', type:'ref', ref:'suspects'},
+        {key:'investigationId', label:'Investigação Relacionada', type:'ref', ref:'investigations'},
+        {key:'latitude', label:'Latitude', type:'text'},
+        {key:'longitude', label:'Longitude', type:'text'},
+        {key:'notes', label:'Observações', type:'textarea'},
+      ],
+      listColumns:[
+        {key:'name', label:'Nome'}, {key:'address', label:'Endereço'},
+        {key:'type', label:'Tipo', render:r=>badge(r.type)},
+        {key:'suspectId', label:'Investigado', render:r=>{ const s=suspectById(r.suspectId); return s?esc(s.name):'—'; }},
+        {key:'investigationId', label:'Caso', render:r=>esc(invLabel(r.investigationId))},
+      ],
+    },
+    contacts:{
+      label:'Contatos', singular:'Contato',
+      fields:[
+        {key:'name', label:'Nome', type:'text', required:true},
+        {key:'phone', label:'Telefone', type:'text'},
+        {key:'type', label:'Tipo', type:'text'},
+        {key:'relation', label:'Relação', type:'text'},
+        {key:'suspectId', label:'Investigado Relacionado', type:'ref', ref:'suspects'},
+        {key:'investigationId', label:'Investigação Relacionada', type:'ref', ref:'investigations'},
+        {key:'notes', label:'Observações', type:'textarea'},
+      ],
+      listColumns:[
+        {key:'name', label:'Nome'}, {key:'phone', label:'Telefone'}, {key:'type', label:'Tipo'},
+        {key:'suspectId', label:'Investigado', render:r=>{ const s=suspectById(r.suspectId); return s?esc(s.name):'—'; }},
+      ],
+    },
+    associates:{
+      label:'Associados', singular:'Associado',
+      fields:[
+        {key:'name', label:'Nome', type:'text', required:true},
+        {key:'alias', label:'Apelido', type:'text'},
+        {key:'photoUrl', label:'URL da Foto', type:'text'},
+        {key:'relation', label:'Relação (amigo, parente, sócio...)', type:'text'},
+        {key:'relevance', label:'Nível de Relevância', type:'select', options:['BAIXA','MÉDIA','ALTA']},
+        {key:'suspectId', label:'Investigado Relacionado', type:'ref', ref:'suspects'},
+        {key:'investigationId', label:'Investigação Relacionada', type:'ref', ref:'investigations'},
+        {key:'notes', label:'Observações', type:'textarea'},
+      ],
+      listColumns:[
+        {key:'name', label:'Nome'}, {key:'alias', label:'Apelido'}, {key:'relation', label:'Relação'},
+        {key:'relevance', label:'Relevância', render:r=>badge(r.relevance)},
+        {key:'suspectId', label:'Investigado', render:r=>{ const s=suspectById(r.suspectId); return s?esc(s.name):'—'; }},
+      ],
+    },
+    factions:{
+      label:'Facções', singular:'Facção',
+      fields:[
+        {key:'name', label:'Nome da Facção', type:'text', required:true},
+        {key:'alias', label:'Apelido / Sigla', type:'text'},
+        {key:'territory', label:'Território / Área de Atuação', type:'text'},
+        {key:'leader', label:'Liderança', type:'text'},
+        {key:'colors', label:'Cores e Símbolos', type:'text'},
+        {key:'attire', label:'Vestimenta Característica', type:'textarea'},
+        {key:'riskLevel', label:'Nível de Periculosidade', type:'select', options:['BAIXA','MÉDIA','ALTA','CRÍTICA']},
+        {key:'status', label:'Status', type:'select', options:['ATIVA','EM MONITORAMENTO','ENFRAQUECIDA','DESARTICULADA']},
+        {key:'rivalFactions', label:'Facções Rivais', type:'text'},
+        {key:'description', label:'Descrição / Histórico', type:'textarea'},
+        {key:'investigationId', label:'Investigação Relacionada', type:'ref', ref:'investigations'},
+        {key:'notes', label:'Observações', type:'textarea'},
+      ],
+      listColumns:[
+        {key:'name', label:'Nome'}, {key:'alias', label:'Sigla'}, {key:'territory', label:'Território'},
+        {key:'riskLevel', label:'Periculosidade', render:r=>badge(r.riskLevel)},
+        {key:'status', label:'Status', render:r=>badge(r.status)},
+        {key:'members', label:'Membros', render:r=>DB.suspects.filter(s=>!s.archived && s.factionId===r.id).length},
+      ],
+    },
+    evidence:{
+      label:'Evidências', singular:'Evidência',
+      fields:[
+        {key:'name', label:'Nome', type:'text', required:true},
+        {key:'type', label:'Tipo', type:'select', options:ENUM.evidenceType},
+        {key:'description', label:'Descrição', type:'textarea'},
+        {key:'date', label:'Data', type:'date'},
+        {key:'location', label:'Local', type:'text'},
+        {key:'url', label:'Link / URL (para tipo LINK, VÍDEO ou arquivo externo)', type:'text'},
+        {key:'investigationId', label:'Investigação Relacionada', type:'ref', ref:'investigations'},
+        {key:'suspectId', label:'Investigado Relacionado', type:'ref', ref:'suspects'},
+        {key:'operationId', label:'Operação Relacionada', type:'ref', ref:'operations'},
+        {key:'responsibleId', label:'Responsável', type:'ref', ref:'users'},
+        {key:'classification', label:'Classificação', type:'select', options:ENUM.classification},
+        {key:'notes', label:'Observações', type:'textarea'},
+      ],
+      listColumns:[
+        {key:'evdId', label:'ID', render:r=>`<span class="mono">${esc(r.evdId)}</span>`},
+        {key:'name', label:'Nome'},
+        {key:'type', label:'Tipo', render:r=>badge(r.type)},
+        {key:'classification', label:'Classificação', render:r=>badge(r.classification)},
+        {key:'investigationId', label:'Caso', render:r=>esc(invLabel(r.investigationId))},
+        {key:'date', label:'Data', render:r=>fmtDate(r.date)},
+      ],
+    },
+    operations:{
+      label:'Operações', singular:'Operação',
+      fields:[
+        {key:'code', label:'Código', type:'text', required:true},
+        {key:'name', label:'Nome', type:'text', required:true},
+        {key:'objective', label:'Objetivo', type:'textarea'},
+        {key:'description', label:'Descrição', type:'textarea'},
+        {key:'status', label:'Status', type:'select', options:ENUM.opStatus},
+        {key:'priority', label:'Prioridade', type:'select', options:ENUM.priority},
+        {key:'startAt', label:'Data de Início', type:'date'},
+        {key:'endAt', label:'Data de Encerramento', type:'date'},
+        {key:'responsibleId', label:'Responsável', type:'ref', ref:'users'},
+        {key:'investigationId', label:'Investigação Relacionada', type:'ref', ref:'investigations'},
+        {key:'notes', label:'Observações', type:'textarea'},
+      ],
+      listColumns:[
+        {key:'code', label:'Código', render:r=>`<span class="mono">${esc(r.code)}</span>`},
+        {key:'name', label:'Nome'},
+        {key:'status', label:'Status', render:r=>badge(r.status)},
+        {key:'priority', label:'Prioridade', render:r=>badge(r.priority)},
+        {key:'responsibleId', label:'Responsável', render:r=>esc(userName(r.responsibleId))},
+        {key:'investigationId', label:'Caso', render:r=>esc(invLabel(r.investigationId))},
+      ],
+    },
+  };
+  return S[type];
+}
+
+function refOptions(refType){
+  if(refType==='users') return DB.users.map(u=>({value:u.id,label:u.codename||u.name}));
+  if(refType==='investigations') return DB.investigations.filter(i=>!i.archived).map(i=>({value:i.id,label:i.caseId+' — '+i.name}));
+  if(refType==='suspects') return DB.suspects.filter(s=>!s.archived).map(s=>({value:s.id,label:s.name+(s.alias?' ("'+s.alias+'")':'')}));
+  if(refType==='operations') return DB.operations.filter(o=>!o.archived).map(o=>({value:o.id,label:o.code+' — '+o.name}));
+  if(refType==='factions') return DB.factions.filter(f=>!f.archived).map(f=>({value:f.id,label:f.name}));
+  return [];
+}
+
+/* ============ BULK SELECT ============ */
+let BULK_SELECT_MODE = {};
+let BULK_SELECTED = {};
+function isBulkMode(type){ return !!BULK_SELECT_MODE[type]; }
+function bulkSet(type){ if(!BULK_SELECTED[type]) BULK_SELECTED[type] = new Set(); return BULK_SELECTED[type]; }
+function resetBulkSelect(type){ BULK_SELECT_MODE[type] = false; if(BULK_SELECTED[type]) BULK_SELECTED[type].clear(); }
+
+/* ============ GENERIC LIST VIEW ============ */
+function renderEntityList(type, filterFn){
+  const schema = schemaFor(type);
+  let rows = DB[type].filter(r=>!r.archived);
+  if(filterFn) rows = rows.filter(filterFn);
+  const canCreate = canEdit();
+  const bulkMode = isBulkMode(type);
+  const selected = bulkSet(type);
+  return `
+  <div class="view-head">
+    <div>
+      <div class="view-title">${schema.label}</div>
+      <div class="view-sub">${rows.length} registro(s) ativo(s)</div>
+    </div>
+    <div class="view-actions">
+      ${canCreate && !bulkMode?`<button class="btn btn-primary" style="width:auto" data-action="new-${type}">+ Novo ${schema.singular}</button>`:''}
+      ${canArchive() && rows.length ? (bulkMode
+        ? `<button class="btn btn-sm" data-bulk-cancel="${type}">Cancelar</button><button class="btn btn-danger" data-bulk-archive="${type}" ${selected.size?'':'disabled'}>Arquivar Selecionados (${selected.size})</button>`
+        : `<button class="btn" data-bulk-toggle="${type}">☑ Selecionar</button>`) : ''}
+    </div>
+  </div>
+  ${isObserver()?'<div class="perm-note">Modo somente leitura — seu nível de acesso (Observador) não permite criar ou editar registros.</div>':''}
+  <div class="table-wrap">
+    <table>
+      <thead><tr>${bulkMode?'<th style="width:34px"><input type="checkbox" data-select-all title="Selecionar todos"></th>':''}${schema.listColumns.map(c=>`<th>${c.label}</th>`).join('')}<th></th></tr></thead>
+      <tbody>
+        ${rows.length? rows.map(r=>`
+          <tr data-row="${r.id}" class="${bulkMode && selected.has(r.id)?'row-selected':''}">
+            ${bulkMode?`<td><input type="checkbox" data-select-row="${r.id}" ${selected.has(r.id)?'checked':''}></td>`:''}
+            ${schema.listColumns.map(c=>`<td>${c.render? c.render(r) : esc(r[c.key])}</td>`).join('')}
+            <td style="text-align:right">
+              ${!bulkMode && canEdit()?`<button class="btn btn-sm" data-edit="${r.id}">Editar</button>`:''}
+            </td>
+          </tr>`).join('') : `<tr class="empty-row"><td colspan="${schema.listColumns.length+2}">Nenhum registro cadastrado ainda.</td></tr>`}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function wireGenericList(type){
+  const schema = schemaFor(type);
+  const newBtn = document.querySelector(`[data-action="new-${type}"]`);
+  if(newBtn) newBtn.addEventListener('click', ()=>openEntityForm(type, null));
+
+  const toggleBtn = document.querySelector(`[data-bulk-toggle="${type}"]`);
+  if(toggleBtn) toggleBtn.addEventListener('click', ()=>{ BULK_SELECT_MODE[type] = true; bulkSet(type).clear(); renderView(); });
+  const cancelBtn = document.querySelector(`[data-bulk-cancel="${type}"]`);
+  if(cancelBtn) cancelBtn.addEventListener('click', ()=>{ resetBulkSelect(type); renderView(); });
+  const archiveBtn = document.querySelector(`[data-bulk-archive="${type}"]`);
+  if(archiveBtn) archiveBtn.addEventListener('click', async ()=>{
+    const ids = Array.from(bulkSet(type));
+    if(!ids.length) return;
+    if(!confirm(`Arquivar ${ids.length} registro(s) selecionado(s)?`)) return;
+    ids.forEach(id=>{ const rec = DB[type].find(x=>x.id===id); if(rec) rec.archived = true; });
+    logAudit('Arquivou em lote', `${ids.length} registro(s) em ${type}`);
+    await saveDB();
+    resetBulkSelect(type);
+    toast(ids.length+' registro(s) arquivado(s).');
+    renderView();
+  });
+
+  if(isBulkMode(type)){
+    const refreshBulkBtn = ()=>{
+      const set = bulkSet(type);
+      const btn = document.querySelector(`[data-bulk-archive="${type}"]`);
+      if(btn){ btn.textContent = `Arquivar Selecionados (${set.size})`; btn.disabled = set.size===0; }
+    };
+    document.querySelectorAll('[data-select-row]').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const set = bulkSet(type);
+        if(cb.checked) set.add(cb.dataset.selectRow); else set.delete(cb.dataset.selectRow);
+        const row = cb.closest('tr'); if(row) row.classList.toggle('row-selected', cb.checked);
+        refreshBulkBtn();
+      });
+    });
+    const all = document.querySelector('[data-select-all]');
+    if(all) all.addEventListener('change', ()=>{
+      document.querySelectorAll('[data-select-row]').forEach(cb=>{
+        cb.checked = all.checked;
+        cb.dispatchEvent(new Event('change'));
+      });
+    });
+    document.querySelectorAll('[data-row]').forEach(row=>{
+      row.addEventListener('click', (ev)=>{
+        if(ev.target.matches('[data-select-row]')) return;
+        const cb = row.querySelector('[data-select-row]');
+        if(cb){ cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
+      });
+    });
+    return;
+  }
+
+  document.querySelectorAll('[data-row]').forEach(row=>{
+    row.addEventListener('click', (ev)=>{
+      if(ev.target.closest('[data-edit]')) return;
+      const id = row.dataset.row;
+      if(type==='suspects') return navigate('suspect-detail',{id});
+      if(type==='investigations') return navigate('investigation-detail',{id});
+      openEntityForm(type, id, true);
+    });
+  });
+  document.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); openEntityForm(type, btn.dataset.edit); });
+  });
+}
+
+/* ============ INVESTIGATIONS LIST (card view) ============ */
+function renderInvestigationsList(){
+  const rows = DB.investigations.filter(i=>!i.archived);
+  const canCreate = canManageOps();
+  return `
+  <div class="view-head">
+    <div>
+      <div class="view-title">Investigações</div>
+      <div class="view-sub">${rows.length} caso(s) ativos no sistema</div>
+    </div>
+    <div class="view-actions">
+      ${canCreate?`<button class="btn btn-primary" style="width:auto" data-action="new-investigations">+ Nova Investigação</button>`:''}
+    </div>
+  </div>
+  ${isObserver()?'<div class="perm-note">Modo somente leitura — seu nível de acesso (Observador) não permite criar ou editar registros.</div>':''}
+  <div class="card-grid">
+    ${rows.length? rows.map(r=>`
+      <div class="case-card" data-row="${r.id}">
+        <div class="cid mono">${esc(r.caseId)}</div>
+        <div class="cname">${esc(r.name)}</div>
+        <div class="badges">${badge(r.status)}${badge(r.priority)}</div>
+        <div class="meta"><span>RESP: <b>${esc(userName(r.responsibleId))}</b></span><span>ATUALIZADO ${fmtDate(r.updatedAt)}</span></div>
+      </div>`).join('') : '<div class="empty-state"><div class="ic">▣</div><p>Nenhuma investigação cadastrada ainda.</p></div>'}
+  </div>`;
+}
+
+/* ============ INVESTIGATION DETAIL / DOSSIÊ ============ */
+const DOSSIE_TABS = [
+  {id:'overview', label:'Visão Geral'},
+  {id:'suspects', label:'Investigados'},
+  {id:'vehicles', label:'Veículos'},
+  {id:'addresses', label:'Locais'},
+  {id:'contacts', label:'Contatos'},
+  {id:'associates', label:'Associados'},
+  {id:'evidence', label:'Evidências'},
+  {id:'operations', label:'Operações'},
+  {id:'timeline', label:'Linha do Tempo'},
+  {id:'notes', label:'Anotações'},
+  {id:'reports', label:'Relatórios'},
+];
+
+function relatedTo(type, invId){
+  if(type==='suspects'){
+    return DB.suspects.filter(r=>!r.archived && (r.investigationId===invId || (r.linkedCases||[]).includes(invId)));
+  }
+  return DB[type].filter(r=>r.investigationId===invId && !r.archived);
+}
+
+function renderInvestigationDetail(id){
+  const inv = invById(id);
+  if(!inv) return '<div class="empty-state"><p>Investigação não encontrada.</p></div>';
+  const editable = canManageOps();
+  return `
+  <div class="view-head">
+    <div class="view-sub" style="cursor:pointer" data-back>← VOLTAR PARA INVESTIGAÇÕES</div>
+  </div>
+  <div class="dossie-head">
+    <div class="top">
+      <div>
+        <h1>${esc(inv.name)}</h1>
+        <div class="cid mono">${esc(inv.caseId)}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        ${editable?`<button class="btn" data-edit-inv>Editar Investigação</button>`:''}
+        ${editable && inv.status!=='ARQUIVADA'?`<button class="btn btn-danger" data-archive-inv>Arquivar</button>`:''}
+      </div>
+    </div>
+    <div class="dossie-meta">
+      <div class="m"><div class="l">Status</div><div class="v">${badge(inv.status)}</div></div>
+      <div class="m"><div class="l">Prioridade</div><div class="v">${badge(inv.priority)}</div></div>
+      <div class="m"><div class="l">Responsável</div><div class="v">${esc(userName(inv.responsibleId))}</div></div>
+      <div class="m"><div class="l">Aberta em</div><div class="v">${fmtDate(inv.openedAt)}</div></div>
+    </div>
+  </div>
+  <div class="tabs">
+    ${DOSSIE_TABS.map(t=>`<div class="tab ${DOSSIE_TAB===t.id?'active':''}" data-tab="${t.id}">${t.label}</div>`).join('')}
+  </div>
+  <div id="dossie-tab-content">${renderDossieTab(inv)}</div>
+  `;
+}
+
+function renderDossieTab(inv){
+  const editable = canEdit();
+  if(DOSSIE_TAB==='overview'){
+    return `
+    <div class="panel" style="padding:18px;">
+      <div class="eyebrow" style="margin-bottom:8px;">DESCRIÇÃO</div>
+      <p style="font-size:13px;line-height:1.7;color:var(--grey-100)">${esc(inv.description)||'Sem descrição cadastrada.'}</p>
+    </div>
+    <div style="height:16px"></div>
+    <div class="kpi-row" style="grid-template-columns:repeat(6,1fr)">
+      <div class="kpi"><div class="lab">Investigados</div><div class="val">${relatedTo('suspects',inv.id).length}</div></div>
+      <div class="kpi"><div class="lab">Veículos</div><div class="val">${relatedTo('vehicles',inv.id).length}</div></div>
+      <div class="kpi"><div class="lab">Locais</div><div class="val">${relatedTo('addresses',inv.id).length}</div></div>
+      <div class="kpi"><div class="lab">Evidências</div><div class="val">${relatedTo('evidence',inv.id).length}</div></div>
+      <div class="kpi"><div class="lab">Operações</div><div class="val">${relatedTo('operations',inv.id).length}</div></div>
+      <div class="kpi"><div class="lab">Associados</div><div class="val">${relatedTo('associates',inv.id).length}</div></div>
+    </div>`;
+  }
+  if(['suspects','vehicles','addresses','contacts','associates','evidence','operations'].includes(DOSSIE_TAB)){
+    const schema = schemaFor(DOSSIE_TAB);
+    const rows = relatedTo(DOSSIE_TAB, inv.id);
+    return `
+    <div class="subgrid-head">
+      <h4>${schema.label} vinculados (${rows.length})</h4>
+      ${editable?`<button class="btn btn-sm" data-action="new-sub-${DOSSIE_TAB}">+ Adicionar ${schema.singular}</button>`:''}
+    </div>
+    <div class="table-wrap">
+      <table><thead><tr>${schema.listColumns.map(c=>`<th>${c.label}</th>`).join('')}</tr></thead>
+      <tbody>${rows.length? rows.map(r=>`<tr data-sub-row="${DOSSIE_TAB}:${r.id}">${schema.listColumns.map(c=>`<td>${c.render?c.render(r):esc(r[c.key])}</td>`).join('')}</tr>`).join('') : `<tr class="empty-row"><td colspan="${schema.listColumns.length}">Nenhum registro vinculado.</td></tr>`}</tbody></table>
+    </div>`;
+  }
+  if(DOSSIE_TAB==='timeline'){
+    const items = DB.timeline.filter(t=>t.refType==='investigation' && t.refId===inv.id);
+    return `<div class="timeline-list">${items.length? items.map(t=>`<div class="tl-item"><div class="t">${fmtDateTime(t.ts)} — ${esc(t.actor)}</div><div class="d">${esc(t.desc)}</div></div>`).join('') : '<div class="empty-state"><p>Nenhum evento registrado para esta investigação ainda.</p></div>'}</div>`;
+  }
+  if(DOSSIE_TAB==='notes'){
+    const items = DB.notes.filter(n=>n.investigationId===inv.id).sort((a,b)=> (b.pinned-a.pinned) || new Date(b.createdAt)-new Date(a.createdAt));
+    return `
+    <div class="subgrid-head"><h4>Anotações (${items.length})</h4>${editable?`<button class="btn btn-sm" data-action="new-note">+ Nova Anotação</button>`:''}</div>
+    ${items.length? items.map(n=>`
+      <div class="note-card ${n.pinned?'pinned':''}">
+        <div class="h"><span>${n.pinned?'📌 ':''}${esc(n.createdBy)} — ${fmtDateTime(n.createdAt)} ${badge(n.classification)}</span>
+          ${editable?`<span><button class="btn btn-sm" data-pin-note="${n.id}">${n.pinned?'Desfixar':'Fixar'}</button> <button class="btn btn-sm btn-danger" data-del-note="${n.id}">Excluir</button></span>`:''}
+        </div>
+        <p>${esc(n.text)}</p>
+      </div>`).join('') : '<div class="empty-state"><p>Nenhuma anotação registrada.</p></div>'}`;
+  }
+  if(DOSSIE_TAB==='reports'){
+    const items = DB.reports.filter(r=>r.investigationId===inv.id);
+    return `
+    <div class="subgrid-head"><h4>Relatórios (${items.length})</h4>${canManageOps()?`<button class="btn btn-sm" data-action="new-report-for-inv">+ Gerar Relatório</button>`:''}</div>
+    ${items.length? items.map(r=>`
+      <div class="panel" style="padding:14px 16px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between"><b style="color:var(--white);font-family:var(--font-display)">${esc(r.title)}</b>${badge(r.classification)}</div>
+        <div class="eyebrow" style="margin-top:4px">${esc(r.type)} · ${esc(userName(r.author))} · ${fmtDate(r.date)}</div>
+        <p style="font-size:12px;margin-top:8px;color:var(--grey-300)">${esc(r.description)}</p>
+      </div>`).join('') : '<div class="empty-state"><p>Nenhum relatório gerado para esta investigação.</p></div>'}`;
+  }
+  return '';
+}
+
+function wireInvestigationDetail(id){
+  const inv = invById(id);
+  document.querySelector('[data-back]').addEventListener('click', ()=>navigate('investigations'));
+  const editBtn = document.querySelector('[data-edit-inv]');
+  if(editBtn) editBtn.addEventListener('click', ()=>openEntityForm('investigations', id));
+  const archBtn = document.querySelector('[data-archive-inv]');
+  if(archBtn) archBtn.addEventListener('click', ()=>archiveRecord('investigations', id));
+  document.querySelectorAll('[data-tab]').forEach(t=>{
+    t.addEventListener('click', ()=>{ DOSSIE_TAB = t.dataset.tab; document.getElementById('dossie-tab-content').innerHTML = renderDossieTab(inv); wireDossieTabContent(inv); document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active', x.dataset.tab===DOSSIE_TAB)); });
+  });
+  wireDossieTabContent(inv);
+}
+
+function wireDossieTabContent(inv){
+  document.querySelectorAll('[data-action^="new-sub-"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const type = btn.dataset.action.replace('new-sub-','');
+      if(type==='suspects') return openSuspectLinkChooser(inv.id);
+      openEntityForm(type, null, false, {investigationId: inv.id});
+    });
+  });
+  document.querySelectorAll('[data-sub-row]').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const [type,id] = row.dataset.subRow.split(':');
+      if(type==='suspects') return navigate('suspect-detail',{id});
+      openEntityForm(type, id);
+    });
+  });
+  const newNoteBtn = document.querySelector('[data-action="new-note"]');
+  if(newNoteBtn) newNoteBtn.addEventListener('click', ()=>openNoteForm(inv.id));
+  document.querySelectorAll('[data-pin-note]').forEach(b=>b.addEventListener('click', (e)=>{ e.stopPropagation(); togglePinNote(b.dataset.pinNote, inv); }));
+  document.querySelectorAll('[data-del-note]').forEach(b=>b.addEventListener('click', (e)=>{ e.stopPropagation(); deleteNote(b.dataset.delNote, inv); }));
+  const newReportBtn = document.querySelector('[data-action="new-report-for-inv"]');
+  if(newReportBtn) newReportBtn.addEventListener('click', ()=>generateReport(inv.id));
+}
+
+/* ============ VINCULAR / CADASTRAR INVESTIGADO ============ */
+function openSuspectLinkChooser(investigationId){
+  openModal(`
+    <div class="modal-head"><h3>Adicionar Investigado</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button type="button" class="btn" style="padding:16px;text-align:left;height:auto;" data-choose="existing">
+          <b style="display:block;color:var(--white);font-family:var(--font-display);font-size:13px;margin-bottom:4px;">🔗 VINCULAR INVESTIGADO EXISTENTE</b>
+          <span style="font-size:11.5px;color:var(--grey-400);">Selecione um investigado já cadastrado no sistema e associe-o a este caso.</span>
+        </button>
+        <button type="button" class="btn" style="padding:16px;text-align:left;height:auto;" data-choose="new">
+          <b style="display:block;color:var(--white);font-family:var(--font-display);font-size:13px;margin-bottom:4px;">＋ CADASTRAR NOVO INVESTIGADO</b>
+          <span style="font-size:11.5px;color:var(--grey-400);">Crie um dossiê do zero, já vinculado a este caso.</span>
+        </button>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>Cancelar</button></div>
+  `);
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeModal));
+  document.querySelector('[data-choose="new"]').addEventListener('click', ()=>{
+    closeModal();
+    openEntityForm('suspects', null, false, {investigationId});
+  });
+  document.querySelector('[data-choose="existing"]').addEventListener('click', ()=>{
+    openSuspectLinkPicker(investigationId);
+  });
+}
+function openSuspectLinkPicker(investigationId){
+  const available = DB.suspects.filter(s=>!s.archived && s.investigationId!==investigationId && !(s.linkedCases||[]).includes(investigationId));
+  openModal(`
+    <div class="modal-head"><h3>Vincular Investigado Existente</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <input type="text" id="link-search" placeholder="Pesquisar por nome ou apelido..." style="width:100%;background:var(--panel);border:1px solid var(--line);color:var(--white);padding:10px 12px;border-radius:var(--radius);font-size:13px;margin-bottom:12px;outline:none;">
+      <div id="link-list" style="max-height:340px;overflow-y:auto;">
+        ${available.length? available.map(s=>`
+          <div class="activity-row" style="cursor:pointer" data-link-suspect="${s.id}">
+            <div class="d"><b>${esc(s.name)}</b>${s.alias?' — '+esc(s.alias):''} <span style="color:var(--grey-400);font-size:11px;">(${esc(invLabel(s.investigationId))})</span></div>
+          </div>`).join('') : '<div class="empty-state"><p>Nenhum outro investigado disponível para vincular.</p></div>'}
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>Cancelar</button></div>
+  `);
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeModal));
+  const search = document.getElementById('link-search');
+  if(search) search.addEventListener('input', ()=>{
+    const q = search.value.toLowerCase();
+    document.querySelectorAll('[data-link-suspect]').forEach(row=>{
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+  document.querySelectorAll('[data-link-suspect]').forEach(row=>{
+    row.addEventListener('click', async ()=>{
+      const s = DB.suspects.find(x=>x.id===row.dataset.linkSuspect);
+      if(!s) return;
+      if(!s.linkedCases) s.linkedCases = [];
+      if(!s.linkedCases.includes(investigationId)) s.linkedCases.push(investigationId);
+      logAudit('Vinculou investigado ao caso', s.name+' → '+invLabel(investigationId));
+      logTimeline(`${(CURRENT_USER.codename||CURRENT_USER.name)} vinculou o investigado "${s.name}" a este caso.`, 'investigation', investigationId);
+      await saveDB();
+      closeModal();
+      toast('Investigado vinculado com sucesso.');
+      const inv = invById(investigationId);
+      document.getElementById('dossie-tab-content').innerHTML = renderDossieTab(inv);
+      wireDossieTabContent(inv);
+    });
+  });
+}
+
+async function togglePinNote(noteId, inv){
+  const n = DB.notes.find(x=>x.id===noteId); if(!n) return;
+  n.pinned = !n.pinned; await saveDB();
+  document.getElementById('dossie-tab-content').innerHTML = renderDossieTab(inv); wireDossieTabContent(inv);
+}
+async function deleteNote(noteId, inv){
+  if(!confirm('Excluir esta anotação?')) return;
+  DB.notes = DB.notes.filter(x=>x.id!==noteId);
+  logAudit('Excluiu anotação', 'Dossiê '+inv.caseId);
+  await saveDB();
+  document.getElementById('dossie-tab-content').innerHTML = renderDossieTab(inv); wireDossieTabContent(inv);
+}
+
+/* ============ SUSPECT DETAIL ============ */
+function renderSuspectDetail(id){
+  const s = suspectById(id);
+  if(!s) return '<div class="empty-state"><p>Investigado não encontrado.</p></div>';
+  const inv = invById(s.investigationId);
+  const vehicles = DB.vehicles.filter(v=>v.ownerId===s.id && !v.archived);
+  const contacts = DB.contacts.filter(c=>c.suspectId===s.id && !c.archived);
+  const addresses = DB.addresses.filter(a=>a.suspectId===s.id && !a.archived);
+  const associates = DB.associates.filter(a=>a.suspectId===s.id && !a.archived);
+  const evidence = DB.evidence.filter(e=>e.suspectId===s.id && !e.archived);
+  const editable = canEdit();
+  return `
+  <div class="view-head"><div class="view-sub" style="cursor:pointer" data-back>← VOLTAR PARA INVESTIGADOS</div></div>
+  <div style="display:grid;grid-template-columns:220px 1fr;gap:20px;">
+    <div>
+      <div class="profile-photo ${editable?'profile-photo-edit':''}" data-photo-box ${editable?'title="Clique para adicionar ou trocar a foto"':''}>
+        ${s.photoUrl?`<img src="${esc(s.photoUrl)}" onerror="this.remove()">`:''}
+        <span class="photo-empty">SEM FOTO</span>
+        ${editable?`<div class="photo-overlay ${s.photoUrl?'':'always'}">${s.photoUrl?'TROCAR FOTO':'+ ADICIONAR FOTO'}</div>`:''}
+      </div>
+      ${editable?`<input type="file" accept="image/*" data-photo-input style="display:none">`:''}
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+        <button class="btn" data-view-cmap>MAPA DE CONEXÕES</button>
+        ${editable?`<button class="btn" data-edit-suspect>EDITAR DOSSIÊ</button>`:''}
+      </div>
+    </div>
+    <div>
+      <div class="dossie-head" style="margin-bottom:14px;">
+        <div class="top">
+          <div>
+            <h1>${esc(s.name)}</h1>
+            <div class="cid mono">${s.alias? 'ALIAS: '+esc(s.alias).toUpperCase() : '—'}</div>
+          </div>
+        </div>
+        <div class="dossie-meta">
+          <div class="m"><div class="l">Status</div><div class="v">${badge(s.status)}</div></div>
+          <div class="m"><div class="l">Nível</div><div class="v">${badge(s.level)}</div></div>
+          <div class="m"><div class="l">Classificação</div><div class="v">${badge(s.classification)}</div></div>
+          <div class="m"><div class="l">Caso</div><div class="v">${inv? `<a href="#" data-goto-inv="${inv.id}" style="color:var(--ice)">${esc(inv.caseId)}</a>`:'—'}</div></div>
+        </div>
+      </div>
+      <div class="panel" style="padding:16px;margin-bottom:14px;">
+        <div class="eyebrow" style="margin-bottom:8px;">DESCRIÇÃO</div>
+        <p style="font-size:13px;line-height:1.6;">${esc(s.description)||'Sem descrição.'}</p>
+        ${s.notes?`<div class="eyebrow" style="margin:14px 0 6px;">OBSERVAÇÕES</div><p style="font-size:13px;line-height:1.6;">${esc(s.notes)}</p>`:''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="panel">
+          <div class="panel-head"><h3>VEÍCULOS RELACIONADOS</h3>${editable?`<button class="btn btn-sm" data-add-related="vehicles">+ Adicionar</button>`:''}</div>
+          <div class="panel-body">${vehicles.length? vehicles.map(v=>`<div class="activity-row" style="cursor:pointer" data-open="vehicles:${v.id}"><div class="d"><b>${esc(v.plate)}</b> — ${esc(v.brand)} ${esc(v.model)}</div></div>`).join(''):'<div class="empty-state"><p>Nenhum veículo vinculado.</p></div>'}</div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>CONTATOS</h3>${editable?`<button class="btn btn-sm" data-add-related="contacts">+ Adicionar</button>`:''}</div>
+          <div class="panel-body">${contacts.length? contacts.map(c=>`<div class="activity-row" style="cursor:pointer" data-open="contacts:${c.id}"><div class="d"><b>${esc(c.name)}</b> — ${esc(c.phone)}</div></div>`).join(''):'<div class="empty-state"><p>Nenhum contato vinculado.</p></div>'}</div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>LOCAIS RELACIONADOS</h3>${editable?`<button class="btn btn-sm" data-add-related="addresses">+ Adicionar</button>`:''}</div>
+          <div class="panel-body">${addresses.length? addresses.map(a=>`<div class="activity-row" style="cursor:pointer" data-open="addresses:${a.id}"><div class="d"><b>${esc(a.name)}</b> — ${esc(a.address)}</div></div>`).join(''):'<div class="empty-state"><p>Nenhum local vinculado.</p></div>'}</div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>ASSOCIADOS / PARENTES / AMIGOS</h3>${editable?`<button class="btn btn-sm" data-add-related="associates">+ Adicionar</button>`:''}</div>
+          <div class="panel-body">${associates.length? associates.map(a=>`<div class="activity-row" style="cursor:pointer" data-open="associates:${a.id}"><div class="d"><b>${esc(a.name)}</b> — ${esc(a.relation)}</div></div>`).join(''):'<div class="empty-state"><p>Nenhum associado vinculado.</p></div>'}</div>
+        </div>
+      </div>
+      <div style="height:14px"></div>
+      <div class="panel">
+        <div class="panel-head"><h3>EVIDÊNCIAS VINCULADAS</h3>${editable?`<button class="btn btn-sm" data-add-related="evidence">+ Adicionar</button>`:''}</div>
+        <div class="panel-body">${evidence.length? evidence.map(e=>`<div class="activity-row" style="cursor:pointer" data-open="evidence:${e.id}"><div class="t mono">${esc(e.evdId)}</div><div class="d">${esc(e.name)} ${badge(e.type)}</div></div>`).join(''):'<div class="empty-state"><p>Nenhuma evidência vinculada.</p></div>'}</div>
+      </div>
+      ${renderAttachmentsPanel('suspects', s.id, s.investigationId)}
+    </div>
+  </div>`;
+}
+function wireSuspectDetail(id){
+  document.querySelector('[data-back]').addEventListener('click', ()=>navigate('suspects'));
+  const editBtn = document.querySelector('[data-edit-suspect]');
+  if(editBtn) editBtn.addEventListener('click', ()=>openEntityForm('suspects', id));
+  const cmapBtn = document.querySelector('[data-view-cmap]');
+  if(cmapBtn) cmapBtn.addEventListener('click', ()=>navigate('connections', {suspectId:id}));
+  const photoBox = document.querySelector('[data-photo-box]');
+  const photoInput = document.querySelector('[data-photo-input]');
+  if(photoBox && photoInput){
+    photoBox.addEventListener('click', ()=>photoInput.click());
+    photoInput.addEventListener('change', async ()=>{
+      const file = photoInput.files && photoInput.files[0];
+      if(!file) return;
+      if(!file.type.startsWith('image/')){ toast('Selecione um arquivo de imagem.', true); photoInput.value=''; return; }
+      try{
+        const raw = await fileToDataURL(file);
+        const small = await resizeImageDataUrl(raw, 640, 0.85);
+        if(small.length > 600000){ toast('Imagem muito pesada. Tente uma foto menor.', true); photoInput.value=''; return; }
+        const rec = DB.suspects.find(x=>x.id===id);
+        if(!rec) return;
+        rec.photoUrl = small;
+        logAudit('Atualizou foto do investigado', rec.name);
+        await saveDB();
+        toast('Foto atualizada.');
+        renderView();
+      }catch(e){ console.error(e); toast('Não foi possível processar a foto: '+(e.message||e), true); }
+      photoInput.value = '';
+    });
+  }
+  const gotoInv = document.querySelector('[data-goto-inv]');
+  if(gotoInv) gotoInv.addEventListener('click', (e)=>{ e.preventDefault(); navigate('investigation-detail',{id:gotoInv.dataset.gotoInv}); });
+  const s = suspectById(id);
+  document.querySelectorAll('[data-add-related]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const type = btn.dataset.addRelated;
+      const preset = {investigationId:s.investigationId};
+      if(type==='vehicles') preset.ownerId = s.id;
+      else preset.suspectId = s.id;
+      openEntityForm(type, null, false, preset);
+    });
+  });
+  document.querySelectorAll('[data-open]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const [type,rid] = el.dataset.open.split(':');
+      openEntityForm(type, rid);
+    });
+  });
+  wireAttachmentsPanel(document.getElementById('view'));
+}
+
+/* ============ TEAM ============ */
+function renderTeam(){
+  const rows = DB.users;
+  return `
+  <div class="view-head">
+    <div><div class="view-title">Equipe Investigativa</div><div class="view-sub">${rows.length} membro(s) cadastrados</div></div>
+    <div class="view-actions">${canManageUsers()?`<button class="btn btn-primary" style="width:auto" data-action="new-user">+ Novo Membro</button>`:''}</div>
+  </div>
+  ${!canManageUsers()?'<div class="perm-note">Somente administradores podem criar, editar ou remover membros da equipe.</div>':''}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Nome</th><th>Codinome</th><th>Cargo</th><th>Especialidade</th><th>Status</th><th>Último Acesso</th><th></th></tr></thead>
+      <tbody>
+        ${rows.map(u=>`
+        <tr data-user-row="${u.id}">
+          <td>${esc(u.name)}</td>
+          <td class="mono">${esc(u.codename||'—')}</td>
+          <td>${badge(ROLES[u.role].label)}</td>
+          <td>${esc(u.specialty||'—')}</td>
+          <td>${badge(u.status||'OFFLINE')}</td>
+          <td>${fmtDateTime(u.lastAccess)}</td>
+          <td style="text-align:right">${canManageUsers()?`<button class="btn btn-sm" data-edit-user="${u.id}">Editar</button>`:''}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+function wireTeam(){
+  const newBtn = document.querySelector('[data-action="new-user"]');
+  if(newBtn) newBtn.addEventListener('click', ()=>openUserForm(null));
+  document.querySelectorAll('[data-edit-user]').forEach(b=>b.addEventListener('click', (e)=>{ e.stopPropagation(); openUserForm(b.dataset.editUser); }));
+}
+
+/* ============ REPORTS ============ */
+function renderReports(){
+  const rows = DB.reports;
+  return `
+  <div class="view-head">
+    <div><div class="view-title">Relatórios</div><div class="view-sub">${rows.length} relatório(s) gerado(s)</div></div>
+  </div>
+  ${rows.length? rows.map(r=>{
+    const inv = invById(r.investigationId);
+    return `<div class="panel" style="padding:16px 18px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-family:var(--font-display);font-size:15px;color:var(--white);font-weight:700;">${esc(r.title)}</div>
+          <div class="eyebrow" style="margin-top:4px;">${esc(r.type)} · ${inv?esc(inv.caseId):'—'} · ${esc(userName(r.author))} · ${fmtDate(r.date)}</div>
+        </div>
+        ${badge(r.classification)}
+      </div>
+      <p style="font-size:12.5px;color:var(--grey-100);margin-top:10px;line-height:1.6;">${esc(r.description)}</p>
+      <div class="eyebrow" style="margin-top:10px;">CONCLUSÃO</div>
+      <p style="font-size:12.5px;color:var(--grey-300);margin-top:4px;line-height:1.6;">${esc(r.conclusion)||'—'}</p>
+    </div>`;
+  }).join('') : '<div class="empty-state"><div class="ic">▦</div><p>Nenhum relatório gerado ainda. Gere relatórios a partir da aba "Relatórios" dentro de um dossiê de investigação.</p></div>'}
+  `;
+}
+function wireReports(){}
+
+/* ============ CONNECTION MAP (por investigado) ============ */
+function renderConnectionsPicker(){
+  const suspects = DB.suspects.filter(s=>!s.archived);
+  const sel = CURRENT_PARAMS.suspectId || (suspects[0] && suspects[0].id);
+  const factions = DB.factions.filter(f=>!f.archived);
+  const groups = factions.map(f=>({ id:f.id, name:f.name, members: suspects.filter(s=>s.factionId===f.id) }));
+  const unassigned = suspects.filter(s=>!s.factionId || !factions.some(f=>f.id===s.factionId));
+  if(unassigned.length) groups.push({ id:'', name:'SEM FACÇÃO', members: unassigned });
+  return `
+  <div class="view-head">
+    <div><div class="view-title">Connection Map</div><div class="view-sub">Investigados agrupados por facção — selecione um para visualizar as ligações</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:270px 1fr;gap:16px;">
+    <div class="panel" style="align-self:start;max-height:640px;overflow-y:auto;">
+      <div class="panel-head"><h3>INVESTIGADOS POR FACÇÃO</h3></div>
+      <div class="panel-body" style="padding:6px;max-height:none;">
+        ${groups.length? groups.map(g=>`
+          <div class="cmap-group-label">${esc(g.name)} <span class="mono">(${g.members.length})</span></div>
+          ${g.members.length? g.members.map(s=>`
+            <div class="cmap-pick-item ${s.id===sel?'active':''}" data-cmap-pick="${s.id}">
+              <div class="n">${esc(s.name)}${s.alias?' <span style="color:var(--grey-400);font-weight:400;">('+esc(s.alias)+')</span>':''}</div>
+              <div class="c mono">${esc(invLabel(s.investigationId))}</div>
+            </div>`).join('') : '<div class="cmap-group-empty">Nenhum investigado nesta facção.</div>'}
+        `).join('') : '<div class="empty-state"><p>Nenhum investigado cadastrado.</p></div>'}
+      </div>
+    </div>
+    <div id="cmap-container">${sel? renderConnectionMap(sel) : '<div class="empty-state"><p>Cadastre um investigado para visualizar o mapa de conexões.</p></div>'}</div>
+  </div>`;
+}
+function renderConnectionMap(suspectId){
+  const s = suspectById(suspectId);
+  if(!s) return '<div class="empty-state"><p>Investigado não encontrado.</p></div>';
+  const inv = invById(s.investigationId);
+  const nodes = [{id:'suspects:'+s.id, type:'suspects', refId:s.id, label:s.name, icon:'☉', tag:'INVESTIGADO', center:true}];
+  if(inv) nodes.push({id:'inv:'+inv.id, type:'investigations', refId:inv.id, label:inv.caseId, icon:'▣', tag:'CASO'});
+  const faction = DB.factions.find(f=>f.id===s.factionId && !f.archived);
+  if(faction) nodes.push({id:'factions:'+faction.id, type:'factions', refId:faction.id, label:faction.name, icon:'⚔', tag:'FACÇÃO'});
+  DB.vehicles.filter(v=>v.ownerId===s.id && !v.archived).forEach(v=>nodes.push({id:'vehicles:'+v.id, type:'vehicles', refId:v.id, label:v.plate, icon:'▤', tag:'VEÍCULO'}));
+  DB.contacts.filter(c=>c.suspectId===s.id && !c.archived).forEach(c=>nodes.push({id:'contacts:'+c.id, type:'contacts', refId:c.id, label:c.name, icon:'☎', tag:'CONTATO'}));
+  DB.associates.filter(a=>a.suspectId===s.id && !a.archived).forEach(a=>nodes.push({id:'associates:'+a.id, type:'associates', refId:a.id, label:a.name, icon:'⚭', tag:'ASSOCIADO'}));
+  DB.addresses.filter(a=>a.suspectId===s.id && !a.archived).forEach(a=>nodes.push({id:'addresses:'+a.id, type:'addresses', refId:a.id, label:a.name, icon:'⌂', tag:'LOCAL'}));
+  DB.evidence.filter(e=>e.suspectId===s.id && !e.archived).forEach(e=>nodes.push({id:'evidence:'+e.id, type:'evidence', refId:e.id, label:e.evdId, icon:'⌘', tag:'EVIDÊNCIA'}));
+
+  const cx=50, cy=50, r=40;
+  const others = nodes.filter(n=>!n.center);
+  const positioned = nodes.map((n)=>{
+    if(n.center) return {...n, x:cx, y:cy};
+    const i = others.indexOf(n);
+    const angle = (i/(others.length||1))*2*Math.PI - Math.PI/2;
+    return {...n, x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle)};
+  });
+
+  const lines = positioned.filter(n=>!n.center).map(n=>`<line x1="${cx}%" y1="${cy}%" x2="${n.x}%" y2="${n.y}%" stroke="#232427" stroke-width="1" />`).join('');
+
+  return `
+  <div class="cmap-wrap" style="height:600px;">
+    <svg style="position:absolute;inset:0;width:100%;height:100%;" preserveAspectRatio="none">${lines}</svg>
+    ${positioned.map(n=>`
+      <div class="cmap-node ${n.center?'center':''}" style="left:${n.x}%;top:${n.y}%;" data-cmap-node="${n.type}:${n.refId}">
+        <div class="cnb">
+          <div class="ci">${n.icon}</div>
+          <div class="cl">${esc(n.label)}</div>
+          <div class="ct">${n.tag}</div>
+        </div>
+      </div>`).join('')}
+  </div>
+  ${others.length<=1?'<div class="empty-state" style="margin-top:12px;"><p>Poucas ligações cadastradas ainda. Vincule veículos, contatos, associados, locais ou evidências a este investigado para vê-los aqui.</p></div>':''}
+  <div class="eyebrow" style="margin-top:12px;">Clique em qualquer nó para abrir o respectivo cadastro.</div>
+  `;
+}
+function wireConnectionsPicker(){
+  document.querySelectorAll('[data-cmap-pick]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const id = el.dataset.cmapPick;
+      CURRENT_PARAMS = {suspectId:id};
+      document.querySelectorAll('[data-cmap-pick]').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('cmap-container').innerHTML = renderConnectionMap(id);
+      wireCmapNodes();
+    });
+  });
+  wireCmapNodes();
+}
+function wireCmapNodes(){
+  document.querySelectorAll('[data-cmap-node]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const [type,id] = el.dataset.cmapNode.split(':');
+      if(type==='investigations') return navigate('investigation-detail',{id});
+      if(type==='suspects') return navigate('suspect-detail',{id});
+      openEntityForm(type, id);
+    });
+  });
+}
+
+/* ============ AUDIT ============ */
+function renderAudit(){
+  const rows = DB.audit.slice(0,300);
+  return `
+  <div class="view-head"><div><div class="view-title">Auditoria</div><div class="view-sub">${rows.length} evento(s) registrados</div></div></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Usuário</th><th>Ação</th><th>Detalhe</th><th>Data/Hora</th></tr></thead>
+    <tbody>${rows.length? rows.map(a=>`<tr><td class="mono">${esc(a.user)}</td><td>${esc(a.action)}</td><td>${esc(a.detail)}</td><td class="mono">${fmtDateTime(a.ts)}</td></tr>`).join('') : `<tr class="empty-row"><td colspan="4">Nenhum evento de auditoria registrado.</td></tr>`}</tbody>
+  </table></div>`;
+}
+
+/* ============ GLOBAL SEARCH ============ */
+function runGlobalSearch(q){
+  q = q.trim().toLowerCase();
+  if(!q) return [];
+  const results = [];
+  const push = (type,label,sub,goto)=>results.push({type,label,sub,goto});
+  DB.investigations.filter(i=>!i.archived).forEach(i=>{ if((i.name+i.caseId).toLowerCase().includes(q)) push('Investigações', i.name, i.caseId, ()=>navigate('investigation-detail',{id:i.id})); });
+  DB.suspects.filter(s=>!s.archived).forEach(s=>{ if((s.name+' '+(s.alias||'')).toLowerCase().includes(q)) push('Investigados', s.name, s.alias||s.status, ()=>navigate('suspect-detail',{id:s.id})); });
+  DB.vehicles.filter(v=>!v.archived).forEach(v=>{ if((v.plate+v.brand+v.model).toLowerCase().includes(q)) push('Veículos', v.plate, v.brand+' '+v.model, ()=>openEntityForm('vehicles', v.id)); });
+  DB.addresses.filter(a=>!a.archived).forEach(a=>{ if((a.name+a.address).toLowerCase().includes(q)) push('Locais', a.name, a.address, ()=>openEntityForm('addresses', a.id)); });
+  DB.contacts.filter(c=>!c.archived).forEach(c=>{ if((c.name+c.phone).toLowerCase().includes(q)) push('Contatos', c.name, c.phone, ()=>openEntityForm('contacts', c.id)); });
+  DB.operations.filter(o=>!o.archived).forEach(o=>{ if((o.code+o.name).toLowerCase().includes(q)) push('Operações', o.name, o.code, ()=>openEntityForm('operations', o.id)); });
+  DB.evidence.filter(e=>!e.archived).forEach(e=>{ if((e.evdId+e.name).toLowerCase().includes(q)) push('Evidências', e.name, e.evdId, ()=>openEntityForm('evidence', e.id)); });
+  DB.reports.forEach(r=>{ if(r.title.toLowerCase().includes(q)) push('Relatórios', r.title, r.type, ()=>navigate('reports')); });
+  return results.slice(0,20);
+}
+
+/* ============ ENTITY FORM MODAL ============ */
+function openModal(html){
+  document.getElementById('modal').innerHTML = html;
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+function closeModal(){ document.getElementById('modal-overlay').style.display = 'none'; }
+
+/* ============ ATTACHMENTS (photos/videos/docs) ============ */
+const ATTACHABLE_TYPES = ['suspects','vehicles','addresses','evidence','associates','factions'];
+const MAX_ATTACHMENT_BYTES = 20*1024*1024;
+
+function fileToDataURL(file){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = ()=>resolve(r.result);
+    r.onerror = ()=>reject(new Error('read failed'));
+    r.readAsDataURL(file);
+  });
+}
+function resizeImageDataUrl(dataUrl, maxDim, quality){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      let w = img.width, h = img.height;
+      if(w>maxDim || h>maxDim){
+        if(w>h){ h = Math.round(h*maxDim/w); w = maxDim; } else { w = Math.round(w*maxDim/h); h = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      try{ resolve(canvas.toDataURL('image/jpeg', quality)); }catch(e){ resolve(dataUrl); }
+    };
+    img.onerror = ()=>resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+function attachmentKind(mime){
+  if(mime.startsWith('image/')) return 'FOTO';
+  if(mime.startsWith('video/')) return 'VÍDEO';
+  if(mime==='application/pdf' || mime.includes('word') || mime.includes('document')) return 'DOCUMENTO';
+  return 'OUTRO';
+}
+function formatBytes(n){
+  if(!n) return '0 KB';
+  if(n<1024*1024) return Math.round(n/1024)+' KB';
+  return (n/1024/1024).toFixed(1)+' MB';
+}
+function attachmentsOf(ownerType, ownerId){
+  return DB.attachments.filter(a=>a.ownerType===ownerType && a.ownerId===ownerId);
+}
+function dataURLtoBlob(dataUrl){
+  const commaIdx = dataUrl.indexOf(',');
+  const meta = dataUrl.slice(0, commaIdx);
+  const mimeMatch = meta.match(/^data:([^;]+)/);
+  const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+  const raw = atob(dataUrl.slice(commaIdx+1));
+  const bytes = new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) bytes[i] = raw.charCodeAt(i);
+  return new Blob([bytes], {type: mime});
+}
+async function addAttachmentFiles(ownerType, ownerId, investigationId, fileList){
+  if(!sb){ toast('Supabase não configurado. Edite SUPABASE_URL e SUPABASE_ANON_KEY no código.', true); return 0; }
+  const files = Array.from(fileList||[]);
+  if(!files.length) return 0;
+  let added = 0;
+  for(const file of files){
+    try{
+      let dataUrl = await fileToDataURL(file);
+      const mime = file.type || 'application/octet-stream';
+      if(mime.startsWith('image/')){
+        try{ dataUrl = await resizeImageDataUrl(dataUrl, 1600, 0.82); }catch(e){ console.warn('resize failed, using original', e); }
+      }
+      const approxBytes = Math.round(dataUrl.length*0.75);
+      if(approxBytes > MAX_ATTACHMENT_BYTES){
+        toast(`"${file.name}" excede o limite de ${formatBytes(MAX_ATTACHMENT_BYTES)} e não foi anexado.`, true);
+        continue;
+      }
+      let blob;
+      try{ blob = dataURLtoBlob(dataUrl); }
+      catch(convErr){ console.error('dataURL->blob failed', convErr); toast(`Não foi possível preparar "${file.name}" para envio.`, true); continue; }
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,'_') || 'arquivo';
+      const storageKey = ownerType+'/'+ownerId+'/'+uid()+'_'+safeName;
+      let upErr;
+      try{
+        const res = await sb.storage.from(ATTACHMENTS_BUCKET).upload(storageKey, blob, { contentType: mime, upsert: true });
+        upErr = res.error;
+      }catch(netErr){ upErr = netErr; }
+      if(upErr){
+        console.error(upErr);
+        toast(`Falha ao salvar "${file.name}": ${upErr.message||upErr.error||'erro no Supabase Storage'}.`, true);
+        continue;
+      }
+      DB.attachments.push({
+        id: uid(), ownerType, ownerId, investigationId: investigationId||null,
+        name: file.name, mime, kind: attachmentKind(mime), size: approxBytes,
+        storageKey, uploadedAt: nowIso(), uploadedBy: CURRENT_USER?(CURRENT_USER.codename||CURRENT_USER.name):'—'
+      });
+      added++;
+    }catch(e){ console.error(e); toast(`Erro ao processar "${file.name}": ${e.message||e}`, true); }
+  }
+  if(added){
+    logAudit('Anexou arquivo(s)', added+' arquivo(s)');
+    logTimeline(`${(CURRENT_USER.codename||CURRENT_USER.name)} anexou ${added} arquivo(s).`, investigationId?'investigation':null, investigationId||null);
+    await saveDB();
+  }
+  return added;
+}
+function attachmentCardHtml(a, editable){
+  return `
+  <div class="att-card">
+    <div class="att-thumb" data-att-thumb data-att-mime="${esc(a.mime)}" data-att-storage="${esc(a.storageKey)}"><div class="att-loading">CARREGANDO…</div></div>
+    <div class="att-meta">
+      <div class="att-name" title="${esc(a.name)}">${esc(a.name)}</div>
+      <div class="att-sub mono">${a.kind} · ${formatBytes(a.size)}</div>
+    </div>
+    ${editable?`<button type="button" class="att-del" data-att-del="${a.id}" title="Remover">×</button>`:''}
+  </div>`;
+}
+function attachmentsGridHtml(ownerType, ownerId, editable){
+  const items = attachmentsOf(ownerType, ownerId);
+  return items.length? items.map(a=>attachmentCardHtml(a, editable)).join('') : '<div class="empty-state" style="grid-column:1/-1;padding:14px 0"><p>Nenhum arquivo anexado ainda.</p></div>';
+}
+function renderAttachmentsPanel(ownerType, ownerId, investigationId){
+  const editable = canEdit();
+  return `
+  <div class="panel attach-panel" style="margin-top:14px;" data-attach-owner-type="${ownerType}" data-attach-owner-id="${ownerId}" data-attach-inv="${investigationId||''}">
+    <div class="panel-head">
+      <h3>FOTOS, VÍDEOS E ANEXOS</h3>
+      ${editable?`<button type="button" class="btn btn-sm" data-att-add>+ Adicionar</button><input type="file" data-att-input style="display:none" multiple accept="image/*,video/*,application/pdf">`:''}
+    </div>
+    <div class="panel-body">
+      <div class="att-grid" data-att-grid>${attachmentsGridHtml(ownerType, ownerId, editable)}</div>
+    </div>
+  </div>`;
+}
+function wireAttachmentsPanel(container){
+  const panel = container.querySelector('[data-attach-owner-type]');
+  if(!panel) return;
+  const ownerType = panel.dataset.attachOwnerType;
+  const ownerId = panel.dataset.attachOwnerId;
+  const investigationId = panel.dataset.attachInv || null;
+  const addBtn = panel.querySelector('[data-att-add]');
+  const input = panel.querySelector('[data-att-input]');
+  if(addBtn && input){
+    addBtn.addEventListener('click', ()=>input.click());
+    input.addEventListener('change', async ()=>{
+      if(!input.files || !input.files.length) return;
+      addBtn.disabled = true; const oldLabel = addBtn.textContent; addBtn.textContent = 'ENVIANDO...';
+      const added = await addAttachmentFiles(ownerType, ownerId, investigationId, input.files);
+      input.value = '';
+      if(added) toast(added+' arquivo(s) anexado(s) com sucesso.');
+      refreshAttachmentsGrid(panel, ownerType, ownerId);
+      addBtn.disabled = false; addBtn.textContent = oldLabel;
+    });
+  }
+  refreshAttachmentsGrid(panel, ownerType, ownerId, true);
+}
+function refreshAttachmentsGrid(panel, ownerType, ownerId, skipRebuild){
+  const grid = panel.querySelector('[data-att-grid]');
+  const editable = canEdit();
+  if(!skipRebuild) grid.innerHTML = attachmentsGridHtml(ownerType, ownerId, editable);
+  grid.querySelectorAll('[data-att-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const a = DB.attachments.find(x=>x.id===b.dataset.attDel);
+      if(!a) return;
+      if(!confirm('Remover este anexo definitivamente?')) return;
+      try{ if(sb) await sb.storage.from(ATTACHMENTS_BUCKET).remove([a.storageKey]); }catch(e){ /* ignore */ }
+      DB.attachments = DB.attachments.filter(x=>x.id!==a.id);
+      logAudit('Removeu anexo', a.name);
+      await saveDB();
+      toast('Anexo removido.');
+      refreshAttachmentsGrid(panel, ownerType, ownerId);
+    });
+  });
+  grid.querySelectorAll('[data-att-thumb]').forEach(el=>loadAttachmentThumb(el));
+}
+async function loadAttachmentThumb(el){
+  const mime = el.dataset.attMime||'';
+  const key = el.dataset.attStorage;
+  if(!sb){ el.innerHTML = '<div class="att-loading">SUPABASE NÃO CONFIGURADO</div>'; return; }
+  try{
+    const { data, error } = await sb.storage.from(ATTACHMENTS_BUCKET).createSignedUrl(key, 3600);
+    if(error || !data || !data.signedUrl){ el.innerHTML = '<div class="att-loading">INDISPONÍVEL</div>'; return; }
+    const url = data.signedUrl;
+    if(mime.startsWith('image/')){
+      el.innerHTML = `<img src="${url}" alt="">`;
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', ()=>{
+        openModal(`<div class="modal-head"><h3>Visualização</h3><button class="modal-close" data-close>×</button></div><div class="modal-body" style="text-align:center;"><img src="${url}" style="max-width:100%;max-height:70vh;border-radius:var(--radius);"></div>`);
+        document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeModal));
+      });
+    } else if(mime.startsWith('video/')){
+      el.innerHTML = `<video src="${url}" controls></video>`;
+    } else {
+      el.innerHTML = `<div class="att-doc">📄</div>`;
+    }
+  }catch(e){ el.innerHTML = '<div class="att-loading">ERRO</div>'; }
+}
+
+/* ============ ADDRESS MAP (Leaflet / OpenStreetMap — sem chave de API) ============ */
+let ADDR_MAP_INSTANCE = null;
+let ADDR_MAP_MARKER = null;
+function initAddressMap(lat, lng){
+  const el = document.getElementById('addr-map');
+  if(!el || typeof L === 'undefined') return;
+  if(ADDR_MAP_INSTANCE){ ADDR_MAP_INSTANCE.remove(); ADDR_MAP_INSTANCE = null; ADDR_MAP_MARKER = null; }
+  const hasCoords = lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng));
+  const startLat = hasCoords ? parseFloat(lat) : -14.235;
+  const startLng = hasCoords ? parseFloat(lng) : -51.9253;
+  const startZoom = hasCoords ? 15 : 4;
+  const map = L.map(el, { attributionControl: true }).setView([startLat, startLng], startZoom);
+  ADDR_MAP_INSTANCE = map;
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+  function setLatLngFields(latVal, lngVal){
+    const latField = document.querySelector('#form-fields [data-field="latitude"]');
+    const lngField = document.querySelector('#form-fields [data-field="longitude"]');
+    if(latField) latField.value = latVal.toFixed(6);
+    if(lngField) lngField.value = lngVal.toFixed(6);
+  }
+  function placeMarker(latlng){
+    if(ADDR_MAP_MARKER) ADDR_MAP_MARKER.setLatLng(latlng);
+    else ADDR_MAP_MARKER = L.marker(latlng, { draggable: true }).addTo(map).on('dragend', ()=>{
+      const p = ADDR_MAP_MARKER.getLatLng();
+      setLatLngFields(p.lat, p.lng);
+    });
+    setLatLngFields(latlng.lat, latlng.lng);
+  }
+  if(hasCoords) placeMarker({lat:startLat, lng:startLng});
+  map.on('click', (e)=>placeMarker(e.latlng));
+  setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 150);
+  const geoBtn = document.querySelector('[data-geo-locate]');
+  if(geoBtn) geoBtn.addEventListener('click', ()=>{
+    if(!navigator.geolocation){ toast('Geolocalização não suportada neste navegador.', true); return; }
+    geoBtn.disabled = true; const old = geoBtn.textContent; geoBtn.textContent = 'LOCALIZANDO...';
+    navigator.geolocation.getCurrentPosition(
+      (pos)=>{
+        const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        map.setView(latlng, 16);
+        placeMarker(latlng);
+        geoBtn.disabled = false; geoBtn.textContent = old;
+      },
+      (err)=>{ console.error(err); toast('Não foi possível obter sua localização atual.', true); geoBtn.disabled = false; geoBtn.textContent = old; },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+}
+
+function renderFactionMembersPanel(factionId){
+  const editable = canEdit();
+  const members = DB.suspects.filter(s=>!s.archived && s.factionId===factionId);
+  return `
+  <div class="panel" style="margin-top:14px;" data-faction-members="${factionId}">
+    <div class="panel-head"><h3>MEMBROS DA FACÇÃO</h3>${editable?`<button type="button" class="btn btn-sm" data-add-member>+ Adicionar Membro</button>`:''}</div>
+    <div class="panel-body">
+      ${members.length? members.map(s=>`<div class="activity-row" style="cursor:pointer" data-open-member="${s.id}"><div class="d"><b>${esc(s.name)}</b>${s.alias?' — '+esc(s.alias):''} ${badge(s.status)}</div></div>`).join('') : '<div class="empty-state"><p>Nenhum membro vinculado a esta facção ainda.</p></div>'}
+    </div>
+  </div>`;
+}
+function wireFactionMembersPanel(container, factionId){
+  const panel = container.querySelector('[data-faction-members]');
+  if(!panel) return;
+  const addBtn = panel.querySelector('[data-add-member]');
+  if(addBtn) addBtn.addEventListener('click', ()=>openFactionMemberChooser(factionId));
+  panel.querySelectorAll('[data-open-member]').forEach(row=>{
+    row.addEventListener('click', ()=>openEntityForm('suspects', row.dataset.openMember));
+  });
+}
+function openFactionMemberChooser(factionId){
+  openModal(`
+    <div class="modal-head"><h3>Adicionar Membro</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button type="button" class="btn" style="padding:16px;text-align:left;height:auto;" data-choose="existing">
+          <b style="display:block;color:var(--white);font-family:var(--font-display);font-size:13px;margin-bottom:4px;">🔗 VINCULAR INVESTIGADO EXISTENTE</b>
+          <span style="font-size:11.5px;color:var(--grey-400);">Selecione um investigado já cadastrado e associe-o a esta facção.</span>
+        </button>
+        <button type="button" class="btn" style="padding:16px;text-align:left;height:auto;" data-choose="new">
+          <b style="display:block;color:var(--white);font-family:var(--font-display);font-size:13px;margin-bottom:4px;">＋ CADASTRAR NOVO INVESTIGADO</b>
+          <span style="font-size:11.5px;color:var(--grey-400);">Crie um dossiê do zero, já vinculado a esta facção.</span>
+        </button>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>Cancelar</button></div>
+  `);
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeModal));
+  document.querySelector('[data-choose="new"]').addEventListener('click', ()=>{
+    closeModal();
+    openEntityForm('suspects', null, false, {factionId});
+  });
+  document.querySelector('[data-choose="existing"]').addEventListener('click', ()=>openFactionMemberPicker(factionId));
+}
+function openFactionMemberPicker(factionId){
+  const available = DB.suspects.filter(s=>!s.archived && s.factionId!==factionId);
+  openModal(`
+    <div class="modal-head"><h3>Vincular Investigado à Facção</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <input type="text" id="fmember-search" placeholder="Pesquisar por nome ou apelido..." style="width:100%;background:var(--panel);border:1px solid var(--line);color:var(--white);padding:10px 12px;border-radius:var(--radius);font-size:13px;margin-bottom:12px;outline:none;">
+      <div id="fmember-list" style="max-height:340px;overflow-y:auto;">
+        ${available.length? available.map(s=>`
+          <div class="activity-row" style="cursor:pointer" data-link-member="${s.id}">
+            <div class="d"><b>${esc(s.name)}</b>${s.alias?' — '+esc(s.alias):''}</div>
+          </div>`).join('') : '<div class="empty-state"><p>Nenhum outro investigado disponível.</p></div>'}
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>Cancelar</button></div>
+  `);
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeModal));
+  const search = document.getElementById('fmember-search');
+  if(search) search.addEventListener('input', ()=>{
+    const q = search.value.toLowerCase();
+    document.querySelectorAll('[data-link-member]').forEach(row=>{ row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+  });
+  document.querySelectorAll('[data-link-member]').forEach(row=>{
+    row.addEventListener('click', async ()=>{
+      const s = DB.suspects.find(x=>x.id===row.dataset.linkMember);
+      const f = DB.factions.find(x=>x.id===factionId);
+      if(!s || !f) return;
+      s.factionId = factionId;
+      logAudit('Vinculou investigado à facção', s.name+' → '+f.name);
+      await saveDB();
+      closeModal();
+      openEntityForm('factions', factionId);
+    });
+  });
+}
+
+function fieldHtml(f, value){
+  const val = value===undefined||value===null? '' : value;
+  if(f.type==='textarea') return `<div class="field"><label>${f.label}${f.required?' *':''}</label><textarea data-field="${f.key}">${esc(val)}</textarea></div>`;
+  if(f.type==='select') return `<div class="field"><label>${f.label}${f.required?' *':''}</label><select data-field="${f.key}"><option value="">—</option>${f.options.map(o=>`<option value="${esc(o)}" ${val===o?'selected':''}>${esc(o)}</option>`).join('')}</select></div>`;
+  if(f.type==='ref') return `<div class="field"><label>${f.label}</label><select data-field="${f.key}"><option value="">—</option>${refOptions(f.ref).map(o=>`<option value="${o.value}" ${val===o.value?'selected':''}>${esc(o.label)}</option>`).join('')}</select></div>`;
+  if(f.type==='date') return `<div class="field"><label>${f.label}</label><input type="date" data-field="${f.key}" value="${esc(val)}"></div>`;
+  return `<div class="field"><label>${f.label}${f.required?' *':''}</label><input type="text" data-field="${f.key}" value="${esc(val)}"></div>`;
+}
+
+function openEntityForm(type, id, readOnlyHint, presetValues){
+  const schema = schemaFor(type);
+  const record = id ? DB[type].find(r=>r.id===id) : null;
+  const readOnly = isObserver();
+  const isNew = !record;
+  const values = record || presetValues || {};
+  openModal(`
+    <div class="modal-head"><h3>${isNew?'Novo':'Editar'} ${schema.singular}</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      ${readOnly?'<div class="perm-note">Visualização — seu nível de acesso não permite edição.</div>':''}
+      <div class="grid2" id="form-fields">${schema.fields.map(f=>fieldHtml(f, values[f.key])).join('')}</div>
+      ${type==='addresses' ? `
+        <div class="eyebrow" style="margin-top:14px;margin-bottom:6px;">LOCALIZAÇÃO NO MAPA</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button type="button" class="btn btn-sm" data-geo-locate>📍 Usar minha localização atual</button>
+          <span class="eyebrow" style="align-self:center;">Ou clique/arraste o marcador no mapa</span>
+        </div>
+        <div id="addr-map" style="height:260px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);"></div>
+      `:''}
+      ${!isNew && type==='evidence' ? `<div class="eyebrow" style="margin-top:6px">ID: ${esc(record.evdId)}</div>`:''}
+      ${!isNew && type==='factions' ? renderFactionMembersPanel(record.id) : ''}
+      ${!isNew && ATTACHABLE_TYPES.includes(type) ? renderAttachmentsPanel(type, record.id, record.investigationId) : (ATTACHABLE_TYPES.includes(type) ? '<div class="eyebrow" style="margin-top:12px">Salve o registro para poder anexar fotos, vídeos e documentos.</div>' : '')}
+    </div>
+    <div class="modal-foot">
+      ${!isNew && canArchive() && !readOnly ? `<button class="btn btn-danger" style="margin-right:auto" data-archive>Arquivar</button>`:''}
+      <button class="btn" data-close>Cancelar</button>
+      ${!readOnly?`<button class="btn btn-primary" style="width:auto" data-save>Salvar</button>`:''}
+    </div>
+  `);
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeModal));
+  if(type==='addresses') initAddressMap(values.latitude, values.longitude);
+  if(!isNew && type==='factions') wireFactionMembersPanel(document.getElementById('modal'), record.id);
+  if(!isNew && ATTACHABLE_TYPES.includes(type)) wireAttachmentsPanel(document.getElementById('modal'));
+  const saveBtn = document.querySelector('[data-save]');
+  if(saveBtn) saveBtn.addEventListener('click', async ()=>{
+    const data = {};
+    document.querySelectorAll('#form-fields [data-field]').forEach(el=>{ data[el.dataset.field] = el.value; });
+    const requiredMissing = schema.fields.filter(f=>f.required && !data[f.key]);
+    if(requiredMissing.length){ toast('Preencha os campos obrigatórios: '+requiredMissing.map(f=>f.label).join(', '), true); return; }
+    if(isNew){
+      const rec = {id:uid(), archived:false, createdAt:nowIso(), ...presetValues, ...data};
+      if(type==='investigations'){ rec.caseId = nextCaseId(); rec.openedAt = nowIso(); rec.updatedAt = nowIso(); }
+      if(type==='evidence'){ rec.evdId = nextEvdId(); }
+      if(type==='suspects'){ rec.linkedCases = rec.linkedCases || []; }
+      DB[type].push(rec);
+      logTimeline(`${(CURRENT_USER.codename||CURRENT_USER.name)} cadastrou um novo registro em ${schema.label.toLowerCase()}: "${rec.name||rec.plate||rec.code||rec.evdId}".`, presetValues&&presetValues.investigationId?'investigation':null, presetValues&&presetValues.investigationId);
+      logAudit('Criou registro', schema.singular+': '+(rec.name||rec.plate||rec.code||rec.evdId));
+      toast(schema.singular+' cadastrado com sucesso.');
+    } else {
+      Object.assign(record, data);
+      if(type==='investigations') record.updatedAt = nowIso();
+      logTimeline(`${(CURRENT_USER.codename||CURRENT_USER.name)} atualizou o registro "${record.name||record.plate||record.code||record.evdId}" em ${schema.label.toLowerCase()}.`, type==='investigations'?'investigation':null, type==='investigations'?record.id:null);
+      logAudit('Editou registro', schema.singular+': '+(record.name||record.plate||record.code||record.evdId));
+      toast(schema.singular+' atualizado com sucesso.');
+    }
+    await saveDB();
+    closeModal();
+    renderView();
+  });
+  const archBtn = document.querySelector('[data-archive]');
+  if(archBtn) archBtn.addEventListener('click', ()=>{ closeModal(); archiveRecord(type, record.id); });
+}
+
+async function archiveRecord(type, id){
+  if(!confirm('Confirma o arquivamento deste registro? Ele deixará de aparecer nas listagens ativas.')) return;
+  const rec = DB[type].find(r=>r.id===id);
+  if(!rec) return;
+  rec.archived = true;
+  if(type==='investigations') rec.status = 'ARQUIVADA';
+  logAudit('Arquivou registro', schemaFor(type).singular+': '+(rec.name||rec.plate||rec.code||rec.caseId||rec.evdId));
+  logTimeline(`${(CURRENT_USER.codename||CURRENT_USER.name)} arquivou um registro em ${schemaFor(type).label.toLowerCase()}.`);
+  await saveDB();
+  toast('Registro arquivado.');
+  if(CURRENT_VIEW==='investigation-detail') return navigate('investigations');
+  renderView();
+}
+
+/* ============ NOTE FORM ============ */
+function openNoteForm(investigationId){
+  openModal(`
+    <div class="modal-head"><h3>Nova Anotação</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Texto</label><textarea id="note-text" placeholder="Ex.: Verificar relação entre veículo ABC-1234 e endereço do galpão."></textarea></div>
+      <div class="field"><label>Classificação</label><select id="note-class">${ENUM.classification.map(c=>`<option value="${c}">${c}</option>`).join('')}</select></div>
+      <div class="field"><label><input type="checkbox" id="note-pin" style="width:auto;margin-right:6px;"> Fixar anotação</label></div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>Cancelar</button><button class="btn btn-primary" style="width:auto" data-save-note>Salvar</button></div>
+  `);
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeModal));
+  document.querySelector('[data-save-note]').addEventListener('click', async ()=>{
+    const text = document.getElementById('note-text').value.trim();
+    if(!text){ toast('Digite o texto da anotação.', true); return; }
+    DB.notes.push({id:uid(), text, investigationId, pinned:document.getElementById('note-pin').checked, classification:document.getElementById('note-class').value, createdBy:(CURRENT_USER.codename||CURRENT_USER.name), createdAt:nowIso()});
+    logTimeline(`${(CURRENT_USER.codename||CURRENT_USER.name)} adicionou uma anotação ao dossiê.`, 'investigation', investigationId);
+    logAudit('Criou anotação', 'Dossiê '+invLabel(investigationId));
+    await saveDB();
+    toast('Anotação salva.');
+    closeModal();
+    renderView();
+  });
+}
+
+/* ============ GENERATE REPORT ============ */
+async function generateReport(investigationId){
+  const inv = invById(investigationId);
+  if(!inv) return;
+  const suspects = relatedTo('suspects', investigationId);
+  const vehicles = relatedTo('vehicles', investigationId);
+  const addresses = relatedTo('addresses', investigationId);
+  const evidence = relatedTo('evidence', investigationId);
+  const operations = relatedTo('operations', investigationId);
+  const desc = `Relatório consolidado do caso ${inv.caseId} — ${inv.name}. `+
+    `${suspects.length} investigado(s), ${vehicles.length} veículo(s), ${addresses.length} local(is), `+
+    `${operations.length} operação(ões) e ${evidence.length} evidência(s) vinculada(s) até o momento.`;
+  DB.reports.push({id:uid(), title:'Relatório Investigativo — '+inv.name, author:CURRENT_USER.id, date:nowIso(), investigationId, type:'RELATÓRIO INVESTIGATIVO', description:desc, conclusion:'', classification:'RESTRITO'});
+  logTimeline(`${(CURRENT_USER.codename||CURRENT_USER.name)} gerou um relatório investigativo para o caso ${inv.caseId}.`, 'investigation', investigationId);
+  logAudit('Gerou relatório', 'Dossiê '+inv.caseId);
+  await saveDB();
+  toast('Relatório gerado com sucesso.');
+  DOSSIE_TAB = 'reports';
+  renderView();
+}
+
+/* ============ USER FORM (team management) ============ */
+function openUserForm(id){
+  const record = id? DB.users.find(u=>u.id===id) : null;
+  const isNew = !record;
+  const roleOpts = Object.keys(ROLES);
+  openModal(`
+    <div class="modal-head"><h3>${isNew?'Novo Membro':'Editar Membro'}</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="grid2">
+        <div class="field"><label>Nome Completo *</label><input type="text" id="uf-name" value="${esc(record?record.name:'')}"></div>
+        <div class="field"><label>Codinome</label><input type="text" id="uf-codename" value="${esc(record?record.codename:'')}"></div>
+        <div class="field"><label>Usuário (login) *</label><input type="text" id="uf-username" value="${esc(record?record.username:'')}" ${record?'':''}></div>
+        <div class="field"><label>${isNew?'Senha inicial *':'Nova senha (deixe em branco para manter)'}</label><input type="password" id="uf-password"></div>
+        <div class="field"><label>Cargo</label><select id="uf-role">${roleOpts.map(r=>`<option value="${r}" ${record&&record.role===r?'selected':''}>${ROLES[r].label}</option>`).join('')}</select></div>
+        <div class="field"><label>Especialidade</label><input type="text" id="uf-specialty" value="${esc(record?record.specialty:'')}"></div>
+        <div class="field"><label>Contato</label><input type="text" id="uf-contact" value="${esc(record?record.contact:'')}"></div>
+        <div class="field"><label>Status</label><select id="uf-status">${ENUM.teamStatus.map(s=>`<option value="${s}" ${record&&record.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      ${!isNew && record.id!=='u_admin' ? `<button class="btn btn-danger" style="margin-right:auto" data-remove-user>Remover Acesso</button>` : ''}
+      <button class="btn" data-close>Cancelar</button>
+      <button class="btn btn-primary" style="width:auto" data-save-user>Salvar</button>
+    </div>
+  `);
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeModal));
+  document.querySelector('[data-save-user]').addEventListener('click', async ()=>{
+    const name = document.getElementById('uf-name').value.trim();
+    const username = document.getElementById('uf-username').value.trim();
+    const pass = document.getElementById('uf-password').value;
+    if(!name || !username){ toast('Preencha nome e usuário.', true); return; }
+    if(isNew && !pass){ toast('Defina uma senha inicial.', true); return; }
+    if(DB.users.some(u=>u.username===username && (!record || u.id!==record.id))){ toast('Este nome de usuário já existe.', true); return; }
+    const data = {
+      name, username,
+      codename: document.getElementById('uf-codename').value.trim(),
+      role: document.getElementById('uf-role').value,
+      specialty: document.getElementById('uf-specialty').value.trim(),
+      contact: document.getElementById('uf-contact').value.trim(),
+      status: document.getElementById('uf-status').value,
+    };
+    if(isNew){
+      const rec = {id:uid(), ...data, passwordHash: await sha256(pass), lastAccess:null, createdAt:nowIso()};
+      DB.users.push(rec);
+      logAudit('Criou usuário', username);
+      toast('Membro cadastrado com sucesso.');
+    } else {
+      Object.assign(record, data);
+      if(pass) record.passwordHash = await sha256(pass);
+      logAudit('Editou usuário', username);
+      toast('Membro atualizado com sucesso.');
+    }
+    await saveDB();
+    closeModal();
+    renderView();
+  });
+  const rmBtn = document.querySelector('[data-remove-user]');
+  if(rmBtn) rmBtn.addEventListener('click', async ()=>{
+    if(!confirm('Remover o acesso deste membro? Esta ação exige permissão de administrador.')) return;
+    DB.users = DB.users.filter(u=>u.id!==record.id);
+    logAudit('Removeu acesso de usuário', record.username);
+    await saveDB();
+    toast('Acesso removido.');
+    closeModal();
+    renderView();
+  });
+}
+
+/* ============ AUTH FLOW ============ */
+async function handleLogin(ev){
+  ev.preventDefault();
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Autenticando...';
+  try{
+    if(!DB){
+      const found = await loadDB();
+      if(!found) await seedDB();
+    }
+    const user = DB.users.find(u=>u.username.toLowerCase()===username.toLowerCase());
+    const hash = await sha256(password);
+    if(!user || user.passwordHash !== hash){
+      errEl.textContent = 'Usuário ou senha inválidos.';
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Autenticar';
+      return;
+    }
+    CURRENT_USER = user;
+    user.status = 'ONLINE';
+    user.lastAccess = nowIso();
+    logAudit('Efetuou login no sistema.');
+    logTimeline(`${(user.codename||user.name)} entrou no sistema.`);
+    await saveDB();
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    navigate('dashboard');
+    tickClock(); setInterval(tickClock, 1000);
+  }catch(e){
+    console.error(e);
+    errEl.textContent = 'Erro ao autenticar. Tente novamente.';
+    errEl.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Autenticar';
+}
+
+async function handleLogout(){
+  if(CURRENT_USER){
+    logAudit('Efetuou logout do sistema.');
+    CURRENT_USER.status = 'OFFLINE';
+    await saveDB();
+  }
+  CURRENT_USER = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+}
+
+/* ============ GLOBAL WIRES ============ */
+function wireGlobal(){
+  document.getElementById('login-form').addEventListener('submit', handleLogin);
+  document.getElementById('btn-logout').addEventListener('click', handleLogout);
+  document.getElementById('modal-overlay').addEventListener('click', (e)=>{ if(e.target.id==='modal-overlay') closeModal(); });
+  document.getElementById('mobile-menu-btn').addEventListener('click', ()=>document.getElementById('sidebar').classList.toggle('open'));
+
+  const search = document.getElementById('global-search');
+  const results = document.getElementById('search-results');
+  search.addEventListener('input', ()=>{
+    const q = search.value;
+    if(!q.trim()){ results.style.display='none'; return; }
+    const res = runGlobalSearch(q);
+    if(!res.length){ results.innerHTML = '<div class="sr-item" style="cursor:default;color:var(--grey-400)">Nenhum resultado encontrado.</div>'; results.style.display='block'; return; }
+    const grouped = {};
+    res.forEach(r=>{ (grouped[r.type]=grouped[r.type]||[]).push(r); });
+    results.innerHTML = Object.keys(grouped).map(g=>`
+      <div class="sr-group-label">${g}</div>
+      ${grouped[g].map((r,idx)=>`<div class="sr-item" data-sr="${g}-${idx}">${esc(r.label)}<small>${esc(r.sub||'')}</small></div>`).join('')}
+    `).join('');
+    results.style.display = 'block';
+    let i=0;
+    Object.keys(grouped).forEach(g=>{
+      grouped[g].forEach((r)=>{
+        const el = results.querySelector(`[data-sr="${g}-${grouped[g].indexOf(r)}"]`);
+        if(el) el.addEventListener('click', ()=>{ r.goto(); results.style.display='none'; search.value=''; });
+      });
+    });
+  });
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.search-wrap')) results.style.display='none';
+  });
+}
+
+/* ============ INIT: DEMONSTRACAO SEGURA ============ */
+async function init(){
+  wireGlobal();
+  await seedDB();
+  CURRENT_USER = {id:'demo_observer',username:'demo_observer',name:'Visitante de Demonstração',codename:'DEMO',role:'observador',status:'ONLINE'};
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  navigate('dashboard');
+  tickClock();
+  setInterval(tickClock, 1000);
+}
+init();
+
+})();
+</script>
 </body>
 </html>

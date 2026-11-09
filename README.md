@@ -1,50 +1,52 @@
-# Black Investigation | MafiaCorp
+# MafiaCorp | BLACK INVESTIGATION
 
-Portal de visualização de dossiês, inspirado no protótipo HTML BLACK INVESTIGATION 5.1.
+Interface de inteligência e dossiês baseada na versão HTML enviada em 09/11/2026.
 
-## Publicação atual
+## Estado da produção
 
-**Versão 1.0, somente leitura / demonstração pública.**
+- Deploy Vercel: https://mafiacorp.vercel.app
+- Código: Luc-RP/MafiaCorp, branch main
+- Versão atual: **demonstração pública, somente leitura**.
+- O layout e os módulos do HTML enviado foram preservados: investigações, investigados, veículos, locais, contatos, associados, **facções**, evidências, operações, equipe, relatórios, mapa de conexões, auditoria e visualização de anexos.
+- Os registros exibidos são **fictícios**, gerados no navegador a cada acesso.
+- Não existe login de verdade nem gravação de dados na versão pública. O botão de logout foi ocultado.
+- Vários visitantes podem visualizar simultaneamente a aplicação, sem sincronização de edição.
 
-- Layout escuro e vermelho inspirado no protótipo.
-- Dashboard, investigações, dossiês, investigados, veículos, locais, contatos, associados, evidências, operações, equipe, relatórios, Connection Map e auditoria.
-- Pesquisa global, filtros por status, exportação JSON de dados de exemplo e layout responsivo.
-- Dados inteiramente demonstrativos, incorporados no arquivo app.js.
-- Vários visitantes podem acessar a mesma versão estática simultaneamente através do CDN da Vercel.
-- Nenhuma senha, banco de dados, API privada ou registro real é usado nesta versão.
-- Sem capacidade de edição compartilhada ou gravação de dados.
+## Conexão Supabase
 
-## Segurança e limites
+O projeto informado no HTML foi configurado nas variáveis privadas do Vercel:
 
-O HTML recebido fazia login comparando um SHA-256 no navegador e armazenava usuários, papéis, dossiês e auditoria dentro de um único JSON em Supabase. Esse modelo não deve ser publicado como sistema real de investigação: expõe o mecanismo de autenticação, depende de permissões verificadas no cliente e permite conflitos por sobrescrita entre usuários.
+- BI_SUPABASE_URL
+- BI_SUPABASE_PUBLISHABLE_KEY
 
-Também havia uma credencial inicial fixa no protótipo. Ela não foi transferida para este repositório. Não reutilize essa senha para uma aplicação real. A URL e a chave publishable do Supabase existente também não foram incorporadas.
+A função `api/supabase-status.js` executa uma **checagem mínima de conectividade** do Supabase. Consulta somente o identificador de até um registro, sem retornar o valor JSON, fotos, senhas ou dados de investigação. O frontend mostra o estado dessa checagem; ele **não recebe credenciais de banco**.
 
-Para habilitar dados reais e colaboração segura, será preciso:
+Essa checagem **NÃO habilita consulta de dados reais, gravação, autenticação ou segurança**. Se o status indicar conectividade, apenas significa que o serviço respondeu.
 
-1. Acessar um projeto Supabase autorizado para este aplicativo.
-2. Usar Supabase Auth (ou autenticação equivalente) com identidades individualizadas.
-3. Criar tabelas relacionais por entidade e políticas RLS que validem permissões no banco.
-4. Aplicar autorização explícita por usuário e, se necessário, organização/grupo. user_metadata não deve controlar papéis.
-5. Definir políticas de acesso a anexos privados e URLs assinadas.
-6. Tratar concorrência, trilha de auditoria do lado servidor, validações, backups, retenção e conformidade com a LGPD.
-7. Testar sessões de usuários diferentes e operações concorrentes antes de habilitar produção com dados sensíveis.
+## Por que o banco não está conectado diretamente?
 
-## Desenvolvimento local
+O arquivo `supabase-setup.sql` recebido traz a política `bi_state_all` com `USING (true)` e `WITH CHECK (true)`, e políticas amplas sobre o bucket `attachments`. No modelo enviado, o login e as permissões são checados apenas com JavaScript, enquanto uma chave pública permite consultar/escrever diretamente na API, sem passar pelo login. Isso expõe dados e hashes de senhas. Além disso, todos os dados estão em um único JSON compartilhado: edições concorrentes podem se sobrescrever.
 
-Não exige instalação. Sirva este diretório com um servidor HTTP estático (por exemplo, python -m http.server 8000) e acesse localhost:8000.
+O projeto de Supabase informado no HTML não está habilitado para administração pela conexão Supabase deste chat. Portanto, **não houve qualquer alteração no banco de destino** e nenhum SQL de migração foi executado.
+
+## Próxima integração de produção (requer acesso autorizado ao projeto)
+
+1. Conferir e proteger um backup válido antes de qualquer operação no banco.
+2. Migrar o login para **Supabase Auth** e ativar contas reais para cada usuário, sem senha padrão no código.
+3. Migrar a autorização para regras RLS baseadas em `auth.uid()` e tabela de membros com níveis definidos no servidor.
+4. Refatorar o JSON único em tabelas por entidade (ou controle de versão/concorrência em transações), sem perder registros.
+5. Proteger o bucket `attachments` por RLS, com acesso de leitura/edição por perfil e URLs assinadas.
+6. Validar segurança e testes multiusuário de leitura, escrita, remoção, anexos e auditoria antes de ativar os dados reais.
+
+O exemplo `supabase/lockdown.sql` documenta um bloqueio conservador das políticas abertas. **Não execute sem planejar a migração do login**, pois o HTML antigo perderá acesso aos dados. Ele não apaga os registros.
 
 ## Arquivos
 
-- index.html: estrutura da aplicação.
-- styles.css: identidade visual e responsividade.
-- app.js: navegação e dados fictícios.
-- vercel.json: cabeçalhos HTTP e ajustes de hospedagem.
+- `index.html`: interface completa adaptada para visualização segura.
+- `api/supabase-status.js`: checagem mínima no servidor Vercel.
+- `supabase-status.js`: selo de conectividade na interface.
+- `supabase/lockdown.sql`: script opcional de revogação de políticas abertas, não executado.
+- `styles.css` e `app.js`: arquivos legados da primeira demonstração, atualmente não importados pelo index.html.
+- `vercel.json`: cabeçalhos HTTP e permissões de recursos estáticos.
 
-## Deploy
-
-Projeto estático conectado ao repositório GitHub Luc-RP/MafiaCorp. O branch de produção é main. O Vercel recompila automaticamente ao receber commits na branch vinculada.
-
-## Responsabilidade de uso
-
-Os exemplos não constituem acusações, registros oficiais nem dados verificados. Não substitua amostras por dados pessoais ou sigilosos até que autenticação, políticas RLS e governança sejam implementadas e auditadas.
+**Atenção:** não publique dados de pessoas reais nem carregue fotos, vídeos ou documentos sigilosos até que o fluxo de autenticação, as políticas RLS e a governança do banco estejam implementados e validados.

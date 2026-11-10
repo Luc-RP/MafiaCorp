@@ -425,7 +425,18 @@ tbody tr:last-child td{border-bottom:none;}
       <div class="field"><label>Senha</label><input type="password" id="login-pass" name="bi_access_key_x7" autocomplete="new-password" spellcheck="false" data-lpignore="true" data-1p-ignore required></div>
       <button type="submit" class="btn btn-primary" id="login-btn">Autenticar</button>
     </form>
-    <div class="login-footnote">Cada navegador mantém seu próprio banco de dados local. Não há sincronização entre pessoas ou dispositivos.<br>Esta senha é local e não oferece proteção de servidor. Evite informações sigilosas.</div>
+    <div id="cloud-auth-tabs" class="cloud-tabs" hidden>
+      <button type="button" id="cloud-show-login" class="cloud-tab selected">Entrar</button>
+      <button type="button" id="cloud-show-signup" class="cloud-tab">Criar conta</button>
+    </div>
+    <form id="cloud-register-form" class="cloud-register" hidden autocomplete="on">
+      <div class="field"><label>Nome</label><input name="name" type="text" minlength="2" maxlength="120" autocomplete="name" required></div>
+      <div class="field"><label>Codinome (seu login)</label><input name="codename" type="text" minlength="3" maxlength="48" autocomplete="username" required></div>
+      <div class="field"><label>Senha forte, no mínimo 8 caracteres</label><input name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></div>
+      <div class="field"><label>Confirmar senha</label><input name="confirm" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></div>
+      <button type="submit" class="btn btn-primary" id="cloud-register-btn">Criar conta</button>
+    </form>
+    <div class="login-footnote" id="auth-footnote">Cada navegador mantém seu próprio banco de dados local. Não há sincronização entre pessoas ou dispositivos.<br>Esta senha é local e não oferece proteção de servidor. Evite informações sigilosas.</div>
   </div>
 </div>
 
@@ -470,6 +481,7 @@ tbody tr:last-child td{border-bottom:none;}
 <script src="/mafia-center.js"></script>
 <script src="/mafia-infographics.js"></script>
 <script src="/mafia-admin.js"></script>
+<script src="/mafia-cloud-ui.js"></script>
 <script>
 (function(){
 "use strict";
@@ -541,6 +553,9 @@ const LEGACY_CACHE_KEY = 'bi_local_cache_v1';
 const ACTIVE_SESSION_KEY = 'mafiacorp_active_user_v1';
 const LAST_VIEW_KEY = 'mafiacorp_last_view_v1';
 let clockInterval = null;
+let REMOTE_AUTH=false;
+let REMOTE_UNAVAILABLE=false;
+const REMOTE_AUTH_MARKER='mafiacorp_remote_auth_enabled_v1';
 function rememberLocalSession(user){
   try{localStorage.setItem(ACTIVE_SESSION_KEY,JSON.stringify({id:user.id,since:nowIso(),passwordRevision:Number(user.passwordRevision||0)}));return true;}
   catch(err){console.warn('Falha ao salvar sessão no navegador',err);return false;}
@@ -825,6 +840,10 @@ function tickClock(){
 /* ============ RENDER ROUTER ============ */
 function renderView(){
   const v = document.getElementById('view');
+  if(CURRENT_VIEW==='admin'&&REMOTE_AUTH&&window.MafiaCloud){
+    window.MafiaCloud.renderAdmin({currentUser:CURRENT_USER,openModal,closeModal,toast,isActive:()=>CURRENT_VIEW==='admin'});
+    return;
+  }
   if(CURRENT_VIEW==='admin'&&window.MafiaAdmin){
     const adminContext={db:DB,isAdmin:!!canManageUsers(),currentUser:CURRENT_USER,saveDB,sha256,logAudit,openModal,closeModal,renderView,toast,uid};
     v.innerHTML=window.MafiaAdmin.render(adminContext);
@@ -1642,6 +1661,7 @@ function wireSuspectDetail(id){
 
 /* ============ TEAM ============ */
 function renderTeam(){
+  if(REMOTE_AUTH)return '<div class="view-head"><div><div class="view-title">Perfis registrados</div><div class="view-sub">As contas centrais ficam no PostgreSQL, não neste navegador.</div></div><div class="view-actions">'+(canManageUsers()?'<button class="btn btn-primary" data-go-admin>ABRIR PAINEL ADM</button>':'')+'</div></div><div class="panel" style="padding:22px"><p>O cadastro de contas centralizadas é gerenciado pelo servidor. '+(canManageUsers()?'Acesse o Painel ADM para listar, bloquear ou redefinir senhas.':'Consulte a administração da organização para gerenciar acessos.')+'</p></div>';
   const rows = DB.users;
   return `
   <div class="view-head">

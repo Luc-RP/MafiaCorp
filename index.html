@@ -403,6 +403,7 @@ tbody tr:last-child td{border-bottom:none;}
 </style>
 <link rel="stylesheet" href="/mafia-center.css">
 <link rel="stylesheet" href="/mafia-infographics.css">
+<link rel="stylesheet" href="/mafia-admin.css">
 </head>
 <body>
 
@@ -468,6 +469,7 @@ tbody tr:last-child td{border-bottom:none;}
 <script src="/mafia-icons.js"></script>
 <script src="/mafia-center.js"></script>
 <script src="/mafia-infographics.js"></script>
+<script src="/mafia-admin.js"></script>
 <script>
 (function(){
 "use strict";
@@ -551,7 +553,7 @@ function restoreLocalSession(){
   let saved=null;
   try{saved=JSON.parse(localStorage.getItem(ACTIVE_SESSION_KEY)||'null');}catch(err){console.warn('Sessão inválida',err);}
   if(!saved || typeof saved.id!=='string' || !DB || !Array.isArray(DB.users)) return null;
-  const user=DB.users.find(u=>u.id===saved.id && typeof u.passwordHash==='string' && u.passwordHash.length===64);
+  const user=DB.users.find(u=>u.id===saved.id && !u.accessDisabled && typeof u.passwordHash==='string' && u.passwordHash.length===64);
   if(!user){forgetLocalSession();return null;}
   return user;
 }
@@ -779,18 +781,19 @@ const NAV = [
   ]},
   {group:'GESTÃO', items:[
     {id:'team', label:'Usuários do painel', icon:'☰'},
+    {id:'admin', label:'Painel ADM', icon:'⚿'},
     {id:'reports', label:'Relatórios', icon:'▦'},
     {id:'connections', label:'Conexões investigados', icon:'⬡'},
     {id:'audit', label:'Auditoria', icon:'◈'},
   ]},
 ];
-const VIEW_LABELS = {infographics:'INFOGRÁFICOS','rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
+const VIEW_LABELS = {admin:'PAINEL ADMINISTRATIVO',infographics:'INFOGRÁFICOS','rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
 
 function renderSidebar(){
   const nav = document.getElementById('sb-nav');
   nav.innerHTML = NAV.map(g=>`
     <div class="sb-group-label">${g.group}</div>
-    ${g.items.map(it=>`<div class="sb-item ${CURRENT_VIEW===it.id?'active':''}" data-nav="${it.id}"><span class="ic">${window.MafiaIcons ? window.MafiaIcons.svg(it.id) : it.icon}</span>${it.label}</div>`).join('')}
+    ${g.items.filter(it=>it.id!=='admin'||canManageUsers()).map(it=>`<div class="sb-item ${CURRENT_VIEW===it.id?'active':''}" data-nav="${it.id}"><span class="ic">${window.MafiaIcons ? window.MafiaIcons.svg(it.id) : it.icon}</span>${it.label}</div>`).join('')}
   `).join('');
   nav.querySelectorAll('.sb-item').forEach(el=>{
     el.addEventListener('click', ()=>{ navigate(el.dataset.nav); document.getElementById('sidebar').classList.remove('open'); });
@@ -801,6 +804,7 @@ function renderSidebar(){
 }
 
 function navigate(view, params){
+  if(view==='admin'&&!canManageUsers()){toast('Acesso restrito ao administrador local.',true);view='dashboard';params={};}
   CURRENT_VIEW = view;
   CURRENT_PARAMS = params||{};
   if(CURRENT_USER){try{localStorage.setItem(LAST_VIEW_KEY,JSON.stringify({view:CURRENT_VIEW,params:CURRENT_PARAMS}));}catch(err){console.warn(err);}}
@@ -821,6 +825,12 @@ function tickClock(){
 /* ============ RENDER ROUTER ============ */
 function renderView(){
   const v = document.getElementById('view');
+  if(CURRENT_VIEW==='admin'&&window.MafiaAdmin){
+    const adminContext={db:DB,isAdmin:!!canManageUsers(),currentUser:CURRENT_USER,saveDB,sha256,logAudit,openModal,closeModal,renderView,toast,uid};
+    v.innerHTML=window.MafiaAdmin.render(adminContext);
+    if(adminContext.isAdmin)window.MafiaAdmin.wire();
+    return;
+  }
   if(CURRENT_VIEW==='infographics' && window.MafiaInfographics){
     const context={db:DB,canEdit:!!canEdit(),saveDB:saveDB,navigate:navigate,renderView:renderView,openModal:openModal,closeModal:closeModal,toast:toast};
     v.innerHTML=window.MafiaInfographics.render(DB,context,CURRENT_PARAMS);
@@ -1635,10 +1645,10 @@ function renderTeam(){
   const rows = DB.users;
   return `
   <div class="view-head">
-    <div><div class="view-title">Equipe Investigativa</div><div class="view-sub">${rows.length} membro(s) cadastrados</div></div>
-    <div class="view-actions">${canManageUsers()?`<button class="btn btn-primary" style="width:auto" data-action="new-user">+ Novo Membro</button>`:''}</div>
+    <div><div class="view-title">Usuários do Painel</div><div class="view-sub">${rows.length} conta(s) cadastrada(s) neste navegador</div></div>
+    <div class="view-actions">${canManageUsers()?`<button class="btn btn-primary" style="width:auto" data-go-admin>ABRIR PAINEL ADM</button>`:''}</div>
   </div>
-  ${!canManageUsers()?'<div class="perm-note">Somente administradores podem criar, editar ou remover membros da equipe.</div>':''}
+  ${!canManageUsers()?'<div class="perm-note">Gerenciamento de contas disponível apenas para administradores. Contas e senhas são locais deste navegador.</div>':''}
   <div class="table-wrap">
     <table>
       <thead><tr><th>Nome</th><th>Codinome</th><th>Cargo</th><th>Especialidade</th><th>Status</th><th>Último Acesso</th><th></th></tr></thead>
@@ -1651,16 +1661,15 @@ function renderTeam(){
           <td>${esc(u.specialty||'—')}</td>
           <td>${badge(u.status||'OFFLINE')}</td>
           <td>${fmtDateTime(u.lastAccess)}</td>
-          <td style="text-align:right">${canManageUsers()?`<button class="btn btn-sm" data-edit-user="${u.id}">Editar</button>`:''}</td>
+          <td style="text-align:right">${u.accessDisabled?'<span class="am-status is-blocked">BLOQUEADA</span>':''}</td>
         </tr>`).join('')}
       </tbody>
     </table>
   </div>`;
 }
 function wireTeam(){
-  const newBtn = document.querySelector('[data-action="new-user"]');
-  if(newBtn) newBtn.addEventListener('click', ()=>openUserForm(null));
-  document.querySelectorAll('[data-edit-user]').forEach(b=>b.addEventListener('click', (e)=>{ e.stopPropagation(); openUserForm(b.dataset.editUser); }));
+  const adminButton=document.querySelector('[data-go-admin]');
+  if(adminButton)adminButton.addEventListener('click',()=>navigate('admin'));
 }
 
 /* ============ REPORTS ============ */
@@ -2273,73 +2282,7 @@ async function generateReport(investigationId){
 }
 
 /* ============ USER FORM (team management) ============ */
-function openUserForm(id){
-  const record = id? DB.users.find(u=>u.id===id) : null;
-  const isNew = !record;
-  const roleOpts = Object.keys(ROLES);
-  openModal(`
-    <div class="modal-head"><h3>${isNew?'Novo Membro':'Editar Membro'}</h3><button class="modal-close" data-close>×</button></div>
-    <div class="modal-body">
-      <div class="grid2">
-        <div class="field"><label>Nome Completo *</label><input type="text" id="uf-name" value="${esc(record?record.name:'')}"></div>
-        <div class="field"><label>Codinome</label><input type="text" id="uf-codename" value="${esc(record?record.codename:'')}"></div>
-        <div class="field"><label>Usuário (login) *</label><input type="text" id="uf-username" value="${esc(record?record.username:'')}" ${record?'':''}></div>
-        <div class="field"><label>${isNew?'Senha inicial *':'Nova senha (deixe em branco para manter)'}</label><input type="password" id="uf-password"></div>
-        <div class="field"><label>Cargo</label><select id="uf-role">${roleOpts.map(r=>`<option value="${r}" ${record&&record.role===r?'selected':''}>${ROLES[r].label}</option>`).join('')}</select></div>
-        <div class="field"><label>Especialidade</label><input type="text" id="uf-specialty" value="${esc(record?record.specialty:'')}"></div>
-        <div class="field"><label>Contato</label><input type="text" id="uf-contact" value="${esc(record?record.contact:'')}"></div>
-        <div class="field"><label>Status</label><select id="uf-status">${ENUM.teamStatus.map(s=>`<option value="${s}" ${record&&record.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      ${!isNew && record.id!=='u_admin' ? `<button class="btn btn-danger" style="margin-right:auto" data-remove-user>Remover Acesso</button>` : ''}
-      <button class="btn" data-close>Cancelar</button>
-      <button class="btn btn-primary" style="width:auto" data-save-user>Salvar</button>
-    </div>
-  `);
-  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeModal));
-  document.querySelector('[data-save-user]').addEventListener('click', async ()=>{
-    const name = document.getElementById('uf-name').value.trim();
-    const username = document.getElementById('uf-username').value.trim();
-    const pass = document.getElementById('uf-password').value;
-    if(!name || !username){ toast('Preencha nome e usuário.', true); return; }
-    if(isNew && !pass){ toast('Defina uma senha inicial.', true); return; }
-    if(DB.users.some(u=>u.username===username && (!record || u.id!==record.id))){ toast('Este nome de usuário já existe.', true); return; }
-    const data = {
-      name, username,
-      codename: document.getElementById('uf-codename').value.trim(),
-      role: document.getElementById('uf-role').value,
-      specialty: document.getElementById('uf-specialty').value.trim(),
-      contact: document.getElementById('uf-contact').value.trim(),
-      status: document.getElementById('uf-status').value,
-    };
-    if(isNew){
-      const rec = {id:uid(), ...data, passwordHash: await sha256(pass), lastAccess:null, createdAt:nowIso()};
-      DB.users.push(rec);
-      logAudit('Criou usuário', username);
-      toast('Membro cadastrado com sucesso.');
-    } else {
-      Object.assign(record, data);
-      if(pass) record.passwordHash = await sha256(pass);
-      logAudit('Editou usuário', username);
-      toast('Membro atualizado com sucesso.');
-    }
-    await saveDB();
-    closeModal();
-    renderView();
-  });
-  const rmBtn = document.querySelector('[data-remove-user]');
-  if(rmBtn) rmBtn.addEventListener('click', async ()=>{
-    if(!confirm('Remover o acesso deste membro? Esta ação exige permissão de administrador.')) return;
-    DB.users = DB.users.filter(u=>u.id!==record.id);
-    logAudit('Removeu acesso de usuário', record.username);
-    await saveDB();
-    toast('Acesso removido.');
-    closeModal();
-    renderView();
-  });
-}
-
+/* Cadastro e alterações de contas consolidados no Painel ADM. */
 function prepareLogin(){
   const admin=DB && DB.users.find(u=>u.id==='u_admin');
   const first=!!(admin&&!admin.passwordHash);
@@ -2377,7 +2320,7 @@ async function handleLogin(ev){
     }
     const user = DB.users.find(u=>u.username.toLowerCase()===username.toLowerCase());
     const hash = await sha256(password);
-    if(!user || user.passwordHash !== hash){
+    if(!user || user.accessDisabled || user.passwordHash !== hash){
       errEl.textContent = 'Usuário ou senha inválidos.';
       errEl.style.display = 'block';
       btn.disabled = false; btn.textContent = 'Autenticar';

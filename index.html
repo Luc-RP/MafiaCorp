@@ -405,6 +405,7 @@ tbody tr:last-child td{border-bottom:none;}
 <link rel="stylesheet" href="/mafia-infographics.css">
 <link rel="stylesheet" href="/mafia-admin.css">
 <link rel="stylesheet" href="/mafia-cloud-ui.css">
+<link rel="stylesheet" href="/mafia-org.css">
 </head>
 <body>
 
@@ -483,6 +484,7 @@ tbody tr:last-child td{border-bottom:none;}
 <script src="/mafia-infographics.js"></script>
 <script src="/mafia-admin.js"></script>
 <script src="/mafia-cloud-ui.js"></script>
+<script src="/mafia-org.js"></script>
 <script>
 (function(){
 "use strict";
@@ -544,7 +546,16 @@ function roleLevel(role){ return (ROLES[role]||{level:0}).level; }
 function isObserver(){ return CURRENT_USER && CURRENT_USER.role==='observador'; }
 function canEdit(){ return CURRENT_USER && roleLevel(CURRENT_USER.role) >= 2; } // investigador+
 function canManageOps(){ return CURRENT_USER && roleLevel(CURRENT_USER.role) >= 3; } // chefe+
-function canManageUsers(){ return CURRENT_USER && CURRENT_USER.role==='admin'; }
+function canManageUsers(){ return CURRENT_USER && CURRENT_USER.role==='admin' && (!REMOTE_AUTH||CURRENT_USER.permissions?.canManageAccounts===true); }
+function hasViewAccess(view){
+  if(!CURRENT_USER)return false;
+  if(!REMOTE_AUTH)return view!=='admin'||canManageUsers();
+  const list=CURRENT_USER.permissions?.views;
+  if(!Array.isArray(list))return false;
+  if(view==='investigation-detail')return list.includes('investigations');
+  if(view==='suspect-detail')return list.includes('suspects');
+  return list.includes(view);
+}
 function canArchive(){ return canEdit(); }
 function canPermanentDelete(){ return canManageUsers(); }
 
@@ -675,6 +686,9 @@ function badge(status){ return `<span class="badge ${statusBadgeClass(status)}">
 const NAV = [
   {group:'CENTRAL DA FAMÍLIA', items:[
     {id:'dashboard', label:'Central operacional', icon:'◈'},
+    {id:'hierarquia', label:'Hierarquia e cargos', icon:'⚑'},
+    {id:'roster', label:'Integrantes e perfis', icon:'♟'},
+    {id:'contribuicoes', label:'Metas e contribuições', icon:'▥'},
     {id:'rp-members', label:'Membros da máfia', icon:'♟'},
     {id:'rp-missions', label:'Missões e contratos', icon:'◎'},
     {id:'rp-goals', label:'Metas', icon:'▥'},
@@ -704,24 +718,24 @@ const NAV = [
     {id:'cleanup-local', label:'Limpar dados antigos', icon:'⌫'},
   ]},
 ];
-const VIEW_LABELS = {'cleanup-local':'LIMPEZA DE DADOS LOCAIS',admin:'PAINEL ADMINISTRATIVO',infographics:'INFOGRÁFICOS','rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
+const VIEW_LABELS = {hierarquia:'HIERARQUIA DA ORGANIZAÇÃO',roster:'INTEGRANTES E RESULTADOS',contribuicoes:'METAS E CONTRIBUIÇÕES','cleanup-local':'LIMPEZA DE DADOS LOCAIS',admin:'PAINEL ADMINISTRATIVO',infographics:'INFOGRÁFICOS','rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
 
 function renderSidebar(){
   const nav = document.getElementById('sb-nav');
   nav.innerHTML = NAV.map(g=>`
     <div class="sb-group-label">${g.group}</div>
-    ${g.items.filter(it=>it.id!=='admin'||canManageUsers()).map(it=>`<div class="sb-item ${CURRENT_VIEW===it.id?'active':''}" data-nav="${it.id}"><span class="ic">${window.MafiaIcons ? window.MafiaIcons.svg(it.id) : it.icon}</span>${it.label}</div>`).join('')}
+    ${g.items.filter(it=>hasViewAccess(it.id)).map(it=>`<div class="sb-item ${CURRENT_VIEW===it.id?'active':''}" data-nav="${it.id}"><span class="ic">${window.MafiaIcons ? window.MafiaIcons.svg(it.id) : it.icon}</span>${it.label}</div>`).join('')}
   `).join('');
   nav.querySelectorAll('.sb-item').forEach(el=>{
     el.addEventListener('click', ()=>{ navigate(el.dataset.nav); document.getElementById('sidebar').classList.remove('open'); });
   });
   document.getElementById('sb-av').textContent = (CURRENT_USER.codename||CURRENT_USER.name||'?').slice(0,2).toUpperCase();
   document.getElementById('sb-name').textContent = CURRENT_USER.codename||CURRENT_USER.name;
-  document.getElementById('sb-role').textContent = ROLES[CURRENT_USER.role].label;
+  document.getElementById('sb-role').textContent = window.MafiaOrg?.TITLES?.[CURRENT_USER.orgRole]||ROLES[CURRENT_USER.role]?.label||'INTEGRANTE';
 }
 
 function navigate(view, params){
-  if(view==='admin'&&!canManageUsers()){toast('Acesso restrito ao administrador local.',true);view='dashboard';params={};}
+  if(CURRENT_USER&&!hasViewAccess(view)){toast('Seu cargo não autoriza essa seção.',true);view='dashboard';params={};}
   CURRENT_VIEW = view;
   CURRENT_PARAMS = params||{};
   if(CURRENT_USER){try{localStorage.setItem(LAST_VIEW_KEY,JSON.stringify({view:CURRENT_VIEW,params:CURRENT_PARAMS}));}catch(err){console.warn(err);}}
@@ -742,6 +756,11 @@ function tickClock(){
 /* ============ RENDER ROUTER ============ */
 function renderView(){
   const v = document.getElementById('view');
+  if(CURRENT_USER&&!hasViewAccess(CURRENT_VIEW)){navigate('dashboard');return;}
+  if(['hierarquia','roster','contribuicoes'].includes(CURRENT_VIEW)&&window.MafiaOrg){
+    window.MafiaOrg.render(CURRENT_VIEW,{currentUser:CURRENT_USER,navigate,openModal,closeModal,toast,isActive:()=>CURRENT_VIEW===CURRENT_VIEW&&['hierarquia','roster','contribuicoes'].includes(CURRENT_VIEW)},CURRENT_PARAMS);
+    return;
+  }
   if(CURRENT_VIEW==='cleanup-local'){
     v.innerHTML=renderLocalCleanup();wireLocalCleanup();return;
   }
@@ -2293,7 +2312,7 @@ function prepareLogin(){
 function remoteUserProfile(profile){
   const account={
     id:profile.id,username:profile.codename,codename:profile.codename,
-    name:profile.name,role:profile.role,status:'ONLINE',
+    name:profile.name,role:profile.role,orgRole:profile.orgRole||'membro',permissions:profile.permissions||null,status:'ONLINE',
     lastAccess:profile.lastAccess||nowIso(),remoteAccount:true
   };
   const current=DB.users.find(x=>x.id===account.id);

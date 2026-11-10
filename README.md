@@ -1,5 +1,45 @@
 # MafiaCorp | Central da Família (FiveM / GTA RP)
 
+## Cargos e metas do QG (gate de 10/11/2026)
+
+**Fonte:** estrutura organizacional e regras fornecidas diretamente pelo responsável pelo MafiaCorp. A aplicação é um recurso de gerenciamento de personagens de FiveM RP.
+
+### Hierarquia central do PostgreSQL
+- **Liderança 01, 02 e 03 (100%)**: definem objetivos e diretrizes, tomam decisões importantes, acompanham Gerente Geral, aprovam promoções e resolvem questões internas.
+- **Gerente Geral (90%)**: supervisiona setores, acompanha metas, cobra resultados dos gerentes, organiza reuniões/avaliações semanais e mantém a comunicação.
+- **Gerente de Farm (65%)**: acompanha a meta diária de 20%, organiza painel QG, incentiva missões do Noia, acompanha a evolução, produção e estoque.
+- **Gerente de Ação (65%)**: lidera a Elite, organiza ações/dominações RP, treina, avalia e identifica potenciais integrantes.
+- **Estrategista / Inteligência (60%)**: planejamento de operações RP, informações relevantes, oportunidades e apoio ao Gerente de Ação.
+- **Logística (55%)**: recursos, preparação, apoio aos setores e disponibilidade de materiais e equipamentos RP.
+- **Elite / Operadores (40%)**: integrantes especializados aprovados, treinamentos, atividades programadas, apoio e referência técnica.
+- **Membro / Integrante (25%)**: cumpre metas nos dias ativos, participa das ações, respeita a hierarquia e evolui no RP.
+
+Os percentuais são **níveis iniciais de acesso**, não uma autorização genérica para obter todos os dados do banco. A matriz efetiva de telas e ações fica em `server/org-roles.js`. O servidor valida as operações das novas APIs e o painel esconde seções não autorizadas. **Módulos antigos com conteúdo em localStorage ainda não possuem proteção de dados por backend**, e deverão ser migrados em gate separado antes de armazenar informações sensíveis ou compartilhadas.
+
+**Conta principal:** a única conta que existia na Aiven, codinome `Luc`, passou de `observador` para papel técnico `admin` e cargo `lider_01`, sem alterar sua senha. Novos cadastros recebem `membro`/`observador` por padrão, sem escalada automática. Somente Liderança pode atribuir cargos via Painel ADM. Os postos de Liderança e gerência principal são exclusivos por cargo; alterações de cargo revogam as sessões anteriores da pessoa.
+
+### Metas e comprovantes
+- **Meta por integrante:** 20% por dia em que marcar atividade; não se presume presença automática pela abertura do site.
+- **Missões:** Aeronave 10%, Caminhão 5%, Submarino 5% e Cargueiro 5%. Pontuação fixa validada no PostgreSQL.
+- **Painel coletivo:** meta de 100% de contribuições aprovadas. Cinco contribuições individuais de 20% completam 100%.
+- **Entrega:** integrante cadastra missão, log escrito e/ou print. Imagens são convertidas para JPEG compacto no navegador, máximo aproximado de 100 KB por comprovante.
+- **Validação:** contribuição entra como `pendente`. Liderança, Gerente Geral e Gerente de Farm podem aprovar/rejeitar contribuições de **outros** integrantes. O sistema não permite aprovar a própria entrega.
+- **Produção:** quando 100% for atingido, Liderança ou Gerente Geral registra a escolha de produção do painel.
+- **Perfis:** botão `Ver log / prints` lista as contribuições de cada integrante; visualização e aprovação seguem permissões do servidor.
+- **Guarda:** registro de atividade, missão, log, pontuação e print em `mc_daily_activity`, `mc_contributions` e `mc_qg_panels`.
+- **Limpeza mensal:** pedido para etapa futura. Não há limpeza automática ativada nem cron de exclusão; definir política de retenção, backup e homologação antes de implementar.
+
+### Implementação
+- `database/003_hierarchy_contributions.sql`: nova migração **aplicada** na Aiven PostgreSQL.
+- `server/org-roles.js`: cargos, responsabilidades, percentuais de acesso e autorização.
+- `api/organization.js`: endpoints autenticados de visão diária, atividade, submissão e conferência de provas RP.
+- `api/admin.js`: atribuição central de cargo (`PATCH action=orgRole`).
+- `mafia-org.js`, `mafia-org.css`: organograma, lista de integrantes, metas QG, prints, histórico e aprovação.
+- `mafia-cloud-ui.js`: seletor de cargo e metas dentro do Painel ADM.
+- `index.html`: roteador e menu autorizados por perfil.
+
+**Verificação:** migração sem exclusões e conta Luc preservada; sintaxe JS validada, testes simulados de todas as categorias de cargo, quatro pontuações, organograma, lista de perfis, missão com print e botões de aprovação. Teste real de envio de comprovante e aprovação entre duas contas ainda deve ser feito pelos usuários do RP.
+
 ## Limpeza de registros antigos (novo gate)
 
 - O PostgreSQL da Aiven foi inspecionado em 10/11/2026: há uma única conta central (`Luc`, papel `observador`), uma sessão, um evento de autenticação e um registro de limite de requisições. **Não havia dossiês ou registros de RP antigos no PostgreSQL**. Nenhuma linha do PostgreSQL foi excluída.

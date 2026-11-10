@@ -402,6 +402,7 @@ tbody tr:last-child td{border-bottom:none;}
 .mobile-menu-btn{display:none;background:none;border:1px solid var(--line);color:var(--grey-100);width:32px;height:32px;border-radius:3px;align-items:center;justify-content:center;}
 </style>
 <link rel="stylesheet" href="/mafia-center.css">
+<link rel="stylesheet" href="/mafia-infographics.css">
 </head>
 <body>
 
@@ -466,6 +467,7 @@ tbody tr:last-child td{border-bottom:none;}
 
 <script src="/mafia-icons.js"></script>
 <script src="/mafia-center.js"></script>
+<script src="/mafia-infographics.js"></script>
 <script>
 (function(){
 "use strict";
@@ -761,6 +763,7 @@ const NAV = [
     {id:'rp-map', label:'Mapa de Los Santos', icon:'⌖'},
     {id:'rp-locations', label:'QGs e locais', icon:'⚑'},
     {id:'rp-network', label:'Mapa de conexões', icon:'◇'},
+    {id:'infographics', label:'Infográficos', icon:'⬡'},
     {id:'rp-backup', label:'Backup RP', icon:'▣'},
   ]},
   {group:'INVESTIGAÇÃO', items:[
@@ -781,7 +784,7 @@ const NAV = [
     {id:'audit', label:'Auditoria', icon:'◈'},
   ]},
 ];
-const VIEW_LABELS = {'rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
+const VIEW_LABELS = {infographics:'INFOGRÁFICOS','rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
 
 function renderSidebar(){
   const nav = document.getElementById('sb-nav');
@@ -818,6 +821,13 @@ function tickClock(){
 /* ============ RENDER ROUTER ============ */
 function renderView(){
   const v = document.getElementById('view');
+  if(CURRENT_VIEW==='infographics' && window.MafiaInfographics){
+    const context={db:DB,canEdit:!!canEdit(),saveDB:saveDB,navigate:navigate,renderView:renderView,openModal:openModal,closeModal:closeModal,toast:toast};
+    v.innerHTML=window.MafiaInfographics.render(DB,context);
+    window.MafiaInfographics.mount();
+    return;
+  }
+  if(window.MafiaInfographics)window.MafiaInfographics.dispose();
   if(window.MafiaCenter && ['dashboard','rp-members','rp-missions','rp-goals','rp-map','rp-locations','rp-network','rp-backup'].includes(CURRENT_VIEW)){
     const rpContext={db:DB,canEdit:!!canEdit(),saveDB:saveDB,navigate:navigate,renderView:renderView,openModal:openModal,closeModal:closeModal,toast:toast};
     v.innerHTML=window.MafiaCenter.render(CURRENT_VIEW,DB,rpContext);

@@ -88,9 +88,10 @@
   function prepare(db) {
     if(!db.rp || typeof db.rp!=='object')db.rp={};
     if(db.rp.version!==1) db.rp.version=1;
-    ['members','missions','goals','locations','links'].forEach(function(k){
+    ['members','missions','goals','locations','links','graphNotes'].forEach(function(k){
       if(!Array.isArray(db.rp[k]))db.rp[k]=[];
     });
+    if(!db.rp.graphPositions || typeof db.rp.graphPositions!=='object' || Array.isArray(db.rp.graphPositions))db.rp.graphPositions={};
     return db.rp;
   }
   function list(type){return active(app[type]);}
@@ -267,7 +268,7 @@
   }
   function backupView(){
     return '<div class="rp-pagehead"><div><div class="rp-eyebrow">MAFIACORP / DADOS LOCAIS</div><h1>Backup do RP</h1><p>Exporte e importe cadastros da nova central no mesmo navegador ou em outro dispositivo.</p></div></div>'+
-    '<div class="rp-card-grid"><section class="rp-profile"><h3>⬇ Exportar dados da central</h3><p class="rp-muted">Inclui equipe de RP, missões, metas, locais e conexões. Não exporta usuários, senhas nem as investigações legadas.</p>'+btn('Exportar JSON','export','backup','','rp-primary')+'</section>'+
+    '<div class="rp-card-grid"><section class="rp-profile"><h3>⬇ Exportar dados da central</h3><p class="rp-muted">Inclui equipe RP, missões, metas, locais, conexões, notas e posições do Infográficos. Não inclui senhas, usuários nem investigações legadas.</p>'+btn('Exportar JSON','export','backup','','rp-primary')+'</section>'+
     '<section class="rp-profile"><h3>⬆ Importar backup</h3><p class="rp-muted">Substitui somente os registros da Central RP. Revise o arquivo antes de importar.</p>'+
     '<input type="file" accept=".json,application/json" id="rp-import-input" class="rp-file-input"/>'+btn('Importar arquivo','import','backup','','rp-primary')+'</section></div>';
   }
@@ -402,10 +403,17 @@
         var raw=JSON.parse(await file.text());
         if(raw.application!=='MafiaCorp-RP'||raw.version!==1||!raw.rp)throw Error('Formato inválido');
         var restored={version:1};
-        ['members','missions','goals','locations','links'].forEach(function(k){
-          if(!Array.isArray(raw.rp[k])||raw.rp[k].length>10000)throw Error('Registros inválidos: '+k);
-          restored[k]=raw.rp[k].filter(function(x){return x&&typeof x.id==='string'&&x.id.length<200});
+        ['members','missions','goals','locations','links','graphNotes'].forEach(function(k){
+          var values=k==='graphNotes'&&!raw.rp[k]?[]:raw.rp[k];
+          if(!Array.isArray(values)||values.length>10000)throw Error('Registros inválidos: '+k);
+          restored[k]=values.filter(function(x){return x&&typeof x.id==='string'&&x.id.length<200});
         });
+        restored.graphPositions={};
+        if(raw.rp.graphPositions && typeof raw.rp.graphPositions==='object' && !Array.isArray(raw.rp.graphPositions)){
+          Object.entries(raw.rp.graphPositions).slice(0,10000).forEach(function(item){
+            var p=item[1];if(p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&Math.abs(p.x)<=2000&&Math.abs(p.y)<=2000)restored.graphPositions[item[0]]= {x:p.x,y:p.y};
+          });
+        }
         if(!confirm('Substituir os dados da Central RP neste navegador? Faça um backup antes.'))return;
         context.db.rp=restored;app=restored;
         await context.saveDB();context.renderView();context.toast('Backup RP importado com sucesso.');

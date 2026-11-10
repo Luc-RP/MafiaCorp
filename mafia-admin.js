@@ -124,8 +124,9 @@ function passwordReset(id){
   actionAllowed(ensureUser(id));
   const pass=String(f.get("password")||"");
   if(pass.length<10||pass!==String(f.get("confirmPassword")))throw Error("A senha deve ter pelo menos 10 caracteres e coincidir com a confirmação.");
-  const previous=user.passwordHash;user.passwordHash=await ctx.sha256(pass);user.passwordChangedAt=now();
-  try{await commitUser("Redefiniu senha local",user.username);}catch(err){user.passwordHash=previous;throw err;}
+  const previous=user.passwordHash,previousRevision=Number(user.passwordRevision||0),previousChangedAt=user.passwordChangedAt;
+  user.passwordHash=await ctx.sha256(pass);user.passwordRevision=previousRevision+1;user.passwordChangedAt=now();
+  try{await commitUser("Redefiniu senha local",user.username);}catch(err){user.passwordHash=previous;user.passwordRevision=previousRevision;user.passwordChangedAt=previousChangedAt;throw err;}
  },"Redefinir senha");
 }
 function toggleAccess(id){

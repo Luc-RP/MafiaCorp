@@ -31,7 +31,7 @@ export default async function handler(req,res){
      const passwordHash=await hashPassword(password),db=database();
      const created=await db.query(`INSERT INTO public.mc_accounts(name,codename,password_hash,role,is_active)
        VALUES($1,$2,$3,'observador',true)
-       RETURNING id,name,codename,role,is_active,created_at,last_login_at,password_revision`,
+       RETURNING id,name,codename,role,org_role,is_active,created_at,last_login_at,password_revision`,
        [name,codename,passwordHash]);
      const account=created.rows[0];
      await createSession(account,res);
@@ -43,7 +43,7 @@ export default async function handler(req,res){
      await rateLimit(req,'login',18);
      const body=jsonBody(req),codename=String(body.codename||'').trim(),password=String(body.password||'');
      if(!CODENAME.test(codename)||password.length>128||!password)return respond(res,401,{error:'INVALID_CREDENTIALS'});
-     const db=database(),result=await db.query(`SELECT id,name,codename,role,is_active,
+     const db=database(),result=await db.query(`SELECT id,name,codename,role,org_role,is_active,
        password_hash,password_revision,failed_signins,locked_until,created_at,last_login_at
        FROM public.mc_accounts WHERE codename_normalized=lower(btrim($1)) LIMIT 1`,[codename]);
      const account=result.rows[0];

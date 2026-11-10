@@ -1,17 +1,18 @@
 # MafiaCorp | Central da Família (FiveM / GTA RP)
 
-## Conta central Aiven PostgreSQL (ativação pendente)
+## Autenticação central Aiven PostgreSQL (ATIVA)
 
-Em **10/11/2026**, a migração SQL de contas, sessões, auditoria e limitações de requisições foi aplicada no PostgreSQL 18.6 gratuito `mafiacorp` na Aiven. A API de cadastro/login/gerenciamento central foi publicada no Vercel, mas **ainda não pode acessar esse banco** porque `DATABASE_URL` e `AIVEN_CA_CERT` não foram configuradas como variáveis privadas no projeto Vercel.
+**Em 10/11/2026**, o serviço PostgreSQL 18.6 `mafiacorp` (Aiven Free) está `RUNNING`; o Vercel recebeu as variáveis privadas `DATABASE_URL` e `AIVEN_CA_CERT` como segredos de produção. Um deploy de produção retornou `READY` e o endpoint `/api/auth?action=status` respondeu `{"mode":"remote","configured":true,"online":true,"registrationOpen":true}`.
 
-Até o status de `/api/auth?action=status` indicar `mode=remote` e `online=true`, o site mantém o login local antigo. **Não confundir a presença da API com autenticação remota funcionando.** O primeiro administrador remoto deverá ser promovido de maneira controlada pela Aiven após criar sua conta.
+O login e o cadastro são agora **validados pelo servidor**. O navegador não usa o antigo login local como alternativa: se a API estiver indisponível, o acesso fica bloqueado temporariamente. Usuários novos informam **nome, codinome único e senha forte com mínimo de 8 caracteres**. As sessões utilizam cookies HttpOnly e podem ser revogadas pelo backend.
 
-O fluxo remoto, quando habilitado, terá cadastro com nome, codinome e senha de mínimo 8 caracteres, sessões HttpOnly e painel ADM de contas centrais. Isso **não sincroniza as investigações e demais dados de RP**, que ainda são locais.
+**Próximo gate ainda pendente:** o proprietário deve criar sua primeira conta no formulário público; esta recebe papel `observador` por segurança. Após identificar e confirmar essa conta no PostgreSQL, a administração principal será atribuída de modo controlado. Ainda não existe administrador remoto criado.
 
-Instruções operacionais: [database/README.md](database/README.md).
+**Escopo:** somente contas, sessões e funções administrativas estão centralizadas. Investigações, dossiês, personagens, arquivos anexados e demais registros continuam locais em cada navegador; não são sincronizados por este gate.
 
+Detalhes técnicos e próximos testes: [database/README.md](database/README.md).
 
-## Painel ADM (contas locais)
+## Painel ADM legado (somente dados locais, substituído no modo remoto)
 
 A aba **Painel ADM**, dentro do grupo **GESTÃO**, é visível somente a contas com papel `admin` no navegador atual. Ela organiza a administração das contas de acesso locais, sem misturá-las aos **Membros da Máfia**, que são fichas de personagens RP.
 

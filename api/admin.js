@@ -1,6 +1,7 @@
 /* MafiaCorp central admin API • all authorization validated server-side. */
 import {database,configured,respond,verifyOrigin,jsonBody,passwordPolicy,
  hashPassword,profile,userFromRequest,rateLimit,audit,serverError} from '../server/auth-core.js';
+import {ROLE_DEFS,LEADERS,platformRoleFor,permission} from '../server/org-roles.js';
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const VALID_ROLES=new Set(['admin','chefe','investigador','observador']);
@@ -13,9 +14,9 @@ export default async function handler(req,res){
  try{
   const db=database(),actor=await userFromRequest(req);
   if(!actor)return respond(res,401,{error:'UNAUTHENTICATED'});
-  if(actor.role!=='admin')return respond(res,403,{error:'FORBIDDEN'});
+  if(actor.role!=='admin'||!permission(actor,'canManageAccounts'))return respond(res,403,{error:'FORBIDDEN'});
   if(req.method==='GET'){
-   const result=await db.query(`SELECT id,name,codename,role,is_active,created_at,last_login_at,
+   const result=await db.query(`SELECT id,name,codename,role,org_role,is_active,created_at,last_login_at,
      password_revision FROM public.mc_accounts ORDER BY created_at ASC LIMIT 1000`);
    return respond(res,200,{users:result.rows.map(profile)});
   }
@@ -24,10 +25,11 @@ export default async function handler(req,res){
   if(req.method==='POST'){
    const name=String(body.name||'').trim(),codename=String(body.codename||'').trim();
    if(name.length<2||name.length>120||!CODENAME.test(codename)||!passwordPolicy(body.password,codename))return respond(res,400,{error:'INVALID_PROFILE_OR_PASSWORD'});
-   const role=VALID_ROLES.has(body.role)?body.role:'observador';
+   const orgRole=ROLE_DEFS[body.orgRole]?body.orgRole:'membro';
+   const role=platformRoleFor(orgRole);
    const hash=await hashPassword(body.password);
-   const result=await db.query(`INSERT INTO public.mc_accounts(name,codename,password_hash,role)
-     VALUES($1,$2,$3,$4) RETURNING id,name,codename,role,is_active,created_at,last_login_at`,[name,codename,hash,role]);
+   const result=await db.query(`INSERT INTO public.mc_accounts(name,codename,password_hash,role,org_role)
+     VALUES($1,$2,$3,$4,$5) RETURNING id,name,codename,role,org_role,is_active,created_at,last_login_at`,[name,codename,hash,role,orgRole]);
    await audit(actor,result.rows[0],'ADMIN_CREATED_ACCOUNT');
    return respond(res,201,{user:profile(result.rows[0])});
   }
@@ -37,7 +39,7 @@ export default async function handler(req,res){
   const client=await db.connect();
   try{
    await client.query('BEGIN');
-   const found=await client.query('SELECT id,codename,role,is_active FROM public.mc_accounts WHERE id=$1 FOR UPDATE',[id]);
+   const found=await client.query('SELECT id,codename,role,org_role,is_active FROM public.mc_accounts WHERE id=$1 FOR UPDATE',[id]);
    if(!found.rows.length){await client.query('ROLLBACK');return respond(res,404,{error:'ACCOUNT_NOT_FOUND'});}
    const target=found.rows[0];
    if(target.role==='admin'){
@@ -62,10 +64,11 @@ export default async function handler(req,res){
        await client.query('UPDATE public.mc_accounts SET password_hash=$2,password_revision=password_revision+1,updated_at=now(),failed_signins=0,locked_until=NULL WHERE id=$1',[id,hash]);
        await client.query('UPDATE public.mc_sessions SET revoked_at=now() WHERE account_id=$1 AND revoked_at IS NULL',[id]);
        event='ADMIN_RESET_PASSWORD';
-     }else if(op==='role'&&VALID_ROLES.has(body.role)){
-       await client.query('UPDATE public.mc_accounts SET role=$2,updated_at=now() WHERE id=$1',[id,body.role]);
+     }else if(op==='orgRole'&&ROLE_DEFS[body.orgRole]){
+       const newRole=String(body.orgRole);
+       await client.query('UPDATE public.mc_accounts SET role=$2,org_role=$3,updated_at=now() WHERE id=$1',[id,platformRoleFor(newRole),newRole]);
        await client.query('UPDATE public.mc_sessions SET revoked_at=now() WHERE account_id=$1 AND revoked_at IS NULL',[id]);
-       event='ADMIN_CHANGED_ROLE';
+       event='ADMIN_CHANGED_ORG_ROLE';
      }else{
        await client.query('ROLLBACK');return respond(res,400,{error:'INVALID_ACTION'});
      }

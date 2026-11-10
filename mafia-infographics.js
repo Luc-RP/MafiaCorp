@@ -495,7 +495,7 @@ function dispose(){
  disposeListeners.forEach(fn=>fn());disposeListeners=[];
  ctx=null;db=null;model=null;state=null;
 }
-function render(database,context){
+function render(database,context,options){
  dispose();
  db=database;ctx=context;prep();
  model=graphData();
@@ -503,6 +503,9 @@ function render(database,context){
    enabled:new Set(TYPES),mode:"global",depth:2,query:"",selectedKey:null,focusKey:null,
    graph:null,width:800,height:520,zoom:1,tx:0,ty:0,pointer:null
  };
+ if(options && options.focusKey && model.nodeMap.has(options.focusKey)){
+   state.selectedKey=options.focusKey;state.focusKey=options.focusKey;state.mode="focus";
+ }
  const html=panelHtml();
  return html;
 }
@@ -512,7 +515,7 @@ function mount(){
  layout(state.graph);
  const degree={};state.graph.edges.forEach(e=>{degree[e.from]=(degree[e.from]||0)+1;degree[e.to]=(degree[e.to]||0)+1;});
  state.graph.nodes.forEach(n=>n.degree=degree[n.key]||0);
- wire();fit();
+ wire();fit();details();
 }
 window.MafiaInfographics={render,mount,dispose,buildGraph:graphData};
 })();

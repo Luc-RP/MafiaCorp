@@ -1,5 +1,5 @@
--- MafiaCorp | Gate DB-01 | PostgreSQL 17 / Aiven
--- Preparado, NÃO executado. A escolha do plano e da região permanece pendente.
+-- MafiaCorp | Gate DB-01 | PostgreSQL 18 / Aiven
+-- Aplicado com sucesso em 2026-11-10 no serviço Aiven mafiacorp (defaultdb).
 -- Nunca coloque senhas ou tokens de sessão em SQL ou no repositório.
 -- Execute UMA instrução por chamada no editor da Aiven.
 

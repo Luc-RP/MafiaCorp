@@ -315,7 +315,8 @@ function details(){
  root.innerHTML='<div class="ig-side-head"><div class="ig-kicker">REGISTRO SELECIONADO</div><div class="ig-node-chip"><i style="--cat:'+n.color+'"></i>'+esc(LABELS[n.type])+'</div><h2>'+esc(n.label)+'</h2></div>'+
   '<div class="ig-side-actions"><button class="ig-btn" data-ig="focus-selected">◎ Focar</button>'+
   (ctx.canEdit?'<button class="ig-btn" data-ig="link-selected">+ Conectar</button>':'')+
-  '<button class="ig-btn" data-ig="open-record">Abrir cadastro</button></div>'+
+  ((n.type!=="notes"||ctx.canEdit)?'<button class="ig-btn" data-ig="open-record">'+(n.type==="notes"?"Editar nota":"Abrir cadastro")+'</button>':'')+
+  (n.type==="notes"&&ctx.canEdit?'<button class="ig-btn" data-ig="archive-note">Arquivar</button>':'')+'</div>'+
   (fields.length?'<div class="ig-properties">'+fields.map(([k,v])=>'<div><small>'+esc(fieldLabels[k]||k)+'</small><span>'+esc(v)+'</span></div>').join("")+'</div>':'')+
   '<div class="ig-relations"><h3>Relações <small>'+relations.length+'</small></h3>'+
   (relations.length?relations.map(edge=>{
@@ -393,6 +394,17 @@ async function deleteLink(id){
  if(!await ctx.saveDB()){rec.archived=false;ctx.toast("Falha ao salvar a exclusão.",true);return;}
  refreshGraph(false);ctx.toast("Conexão removida.");
 }
+async function archiveSelectedNote(){
+ if(!ctx.canEdit)return;
+ const n=model.nodeMap.get(state.selectedKey);
+ if(!n||n.type!=="notes")return;
+ if(!window.confirm("Arquivar esta nota de RP? As conexões que a utilizam deixarão de aparecer."))return;
+ n.record.archived=true;
+ if(!await ctx.saveDB()){n.record.archived=false;ctx.toast("Não foi possível arquivar a nota.",true);return;}
+ state.selectedKey=null;
+ refreshGraph(false);
+ ctx.toast("Nota arquivada.");
+}
 function openRecord(){
  const n=model.nodeMap.get(state.selectedKey);if(!n)return;
  if(n.type==="notes"){createNote(n.id);return;}
@@ -418,6 +430,7 @@ function perform(command){
  else if(command==="new-note"){createNote();}
  else if(command==="new-link"||command==="link-selected"){editLink();}
  else if(command==="open-record"){openRecord();}
+ else if(command==="archive-note"){archiveSelectedNote();}
  else if(command==="zoom-in"){setZoom(state.zoom*1.27);}
  else if(command==="zoom-out"){setZoom(state.zoom/1.27);}
  else if(command==="fit"){fit();}

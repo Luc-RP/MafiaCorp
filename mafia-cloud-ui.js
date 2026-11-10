@@ -35,6 +35,10 @@ function me(){return api(API+'?action=me');}
 function logout(){return api(API+'?action=logout','POST',{});}
 function safeDate(s){if(!s)return 'Nunca';const d=new Date(s);return Number.isNaN(d.getTime())?'—':d.toLocaleString('pt-BR');}
 const ROLE={admin:'Administrador',chefe:'Chefe',investigador:'Investigador',observador:'Observador'};
+const ORG_ROLE={lider_01:'Liderança 01',lider_02:'Liderança 02',lider_03:'Liderança 03',gerente_geral:'Gerente Geral',gerente_farm:'Gerente de Farm',gerente_acao:'Gerente de Ação',estrategista:'Estrategista / Inteligência',logistica:'Logística',elite:'Elite / Operadores',membro:'Membro / Integrante'};
+const ORG_ACCESS={lider_01:100,lider_02:100,lider_03:100,gerente_geral:90,gerente_farm:65,gerente_acao:65,estrategista:60,logistica:55,elite:40,membro:25};
+function roleOptions(selected){return Object.entries(ORG_ROLE).map(([key,value])=>'<option value="'+key+'" '+(selected===key?'selected':'')+'>'+esc(value)+' · '+ORG_ACCESS[key]+'% acesso</option>').join('');}
+
 let ctx=null,users=[],search='',filter='all';
 function adminHtml(){
  const active=users.filter(x=>x.isActive).length;
@@ -51,11 +55,11 @@ function tableHtml(){
  (filtered.length?filtered.map(u=>{
   const own=u.id===ctx.currentUser.id;
   return '<tr><td><div class="am-profile"><div class="am-avatar">'+esc(u.codename.slice(0,2).toUpperCase())+'</div><div><strong>'+esc(u.name)+'</strong><small>@'+esc(u.codename)+(own?' · VOCÊ':'')+'</small></div></div></td>'+
-  '<td><span class="am-role">'+esc(ROLE[u.role]||u.role)+'</span></td>'+
+  '<td><span class="am-role">'+esc(ORG_ROLE[u.orgRole]||ORG_ROLE.membro)+'</span><small>'+Number(ORG_ACCESS[u.orgRole]||25)+'% de acesso</small></td>'+
   '<td><span class="am-status '+(u.isActive?'is-active':'is-blocked')+'">'+(u.isActive?'ATIVO':'BLOQUEADO')+'</span></td>'+
   '<td class="am-muted">'+esc(safeDate(u.lastAccess))+'</td><td><div class="am-actions">'+
   '<button class="am-btn" data-cloud="profile" data-id="'+esc(u.id)+'">Ficha</button>'+
-  '<button class="am-btn" data-cloud="password" data-id="'+esc(u.id)+'" '+(own?'disabled':'')+'>Senha</button>'+
+  '<button class="am-btn" data-cloud="orgRole" data-id="'+esc(u.id)+'" '+(own?'disabled':'')+'>Cargo</button>'+'<button class="am-btn" data-cloud="contributions" data-id="'+esc(u.id)+'">Metas</button>'+'<button class="am-btn" data-cloud="password" data-id="'+esc(u.id)+'" '+(own?'disabled':'')+'>Senha</button>'+
   '<button class="am-btn am-warning-btn" data-cloud="toggle" data-id="'+esc(u.id)+'" '+(own?'disabled':'')+'>'+(u.isActive?'Bloquear':'Reativar')+'</button>'+
   '<button class="am-btn am-danger" data-cloud="delete" data-id="'+esc(u.id)+'" '+(own?'disabled':'')+'>Excluir</button></div></td></tr>';
  }).join(''):'<tr><td colspan="5"><div class="am-empty">Nenhuma conta encontrada.</div></td></tr>')+'</tbody></table></div>';
@@ -79,18 +83,18 @@ function formModal(title,body,submit,label='Salvar'){
 }
 function profile(u){
  formModal('Perfil de '+u.codename,'<div class="am-profile-detail">'+[
-  ['Nome',u.name],['Codinome',u.codename],['Cargo',ROLE[u.role]||u.role],['Situação',u.isActive?'Ativo':'Bloqueado'],['Criado em',safeDate(u.createdAt)],['Último acesso',safeDate(u.lastAccess)]
+  ['Nome',u.name],['Codinome',u.codename],['Cargo',ORG_ROLE[u.orgRole]||ORG_ROLE.membro],['Visibilidade',String(ORG_ACCESS[u.orgRole]||25)+'%'],['Situação',u.isActive?'Ativo':'Bloqueado'],['Criado em',safeDate(u.createdAt)],['Último acesso',safeDate(u.lastAccess)]
  ].map(([k,v])=>'<div><small>'+esc(k)+'</small><span>'+esc(v||'—')+'</span></div>').join('')+'</div>',()=>Promise.resolve(),'Fechar');
 }
 function create(){
  formModal('Criar conta no PostgreSQL','<label>Nome<input name="name" minlength="2" maxlength="120" required></label>'+
   '<label>Codinome de acesso<input name="codename" minlength="3" maxlength="48" required></label>'+
-  '<label>Permissão<select name="role">'+Object.entries(ROLE).map(([key,value])=>'<option value="'+esc(key)+'" '+(key==='observador'?'selected':'')+'>'+esc(value)+'</option>').join('')+'</select></label>'+
+  '<label>Cargo na organização<select name="orgRole">'+roleOptions('membro')+'</select></label>'+
   '<label>Senha inicial<input name="password" type="password" minlength="8" required></label>'+
   '<label>Confirmar senha<input name="confirm" type="password" minlength="8" required></label>',
  async data=>{
   if(data.get('password')!==data.get('confirm'))throw new Error('Confirmação de senha diferente.');
-  await api(ADMIN,'POST',{name:data.get('name'),codename:data.get('codename'),role:data.get('role'),password:data.get('password')});
+  await api(ADMIN,'POST',{name:data.get('name'),codename:data.get('codename'),orgRole:data.get('orgRole'),password:data.get('password')});
  },'Criar usuário');
 }
 function reset(u){
@@ -101,6 +105,14 @@ function reset(u){
   if(data.get('password')!==data.get('confirm'))throw new Error('As senhas não coincidem.');
   await api(ADMIN,'PATCH',{id:u.id,action:'resetPassword',password:data.get('password')});
  },'Redefinir senha');
+}
+function changeOrgRole(u){
+ formModal('Atribuir cargo: '+u.codename,
+  '<p class="am-inline-warning">As permissões e telas serão atualizadas no servidor. A pessoa precisará entrar novamente após a mudança de cargo.</p>'+
+  '<label>Cargo oficial<select name="orgRole">'+roleOptions(u.orgRole||'membro')+'</select></label>',
+  async data=>{
+    await api(ADMIN,'PATCH',{id:u.id,action:'orgRole',orgRole:String(data.get('orgRole'))});
+  },'Salvar cargo');
 }
 function toggle(u){
  formModal((u.isActive?'Bloquear':'Reativar')+': '+u.codename,
@@ -120,7 +132,9 @@ function dispatch(action,id){
  if(action==='create')return create();
  const u=users.find(x=>x.id===id);if(!u)return;
  if(action==='profile')return profile(u);
+ if(action==='contributions'){if(ctx.navigate)ctx.navigate('contribuicoes',{memberId:u.id});return;}
  if(u.id===ctx.currentUser.id)return;
+ if(action==='orgRole')return changeOrgRole(u);
  if(action==='password')return reset(u);
  if(action==='toggle')return toggle(u);
  if(action==='delete')return remove(u);

@@ -2365,6 +2365,23 @@ function wireGlobal(){
   document.getElementById('btn-logout').addEventListener('click', handleLogout);
   // Logout em outra aba também encerra esta sessão local.
   window.addEventListener('storage',ev=>{
+    if(ev.key===LOCAL_DB_KEY && CURRENT_USER){
+      try{
+        const latest=JSON.parse(ev.newValue||'null');
+        const account=latest&&Array.isArray(latest.users)?latest.users.find(u=>u.id===CURRENT_USER.id):null;
+        if(!account || account.accessDisabled){
+          const localUserId=CURRENT_USER.id;
+          try{const saved=JSON.parse(localStorage.getItem(ACTIVE_SESSION_KEY)||'null');if(saved&&saved.id===localUserId)forgetLocalSession();}catch(e){}
+          CURRENT_USER=null;
+          if(clockInterval!==null){clearInterval(clockInterval);clockInterval=null;}
+          document.getElementById('app').style.display='none';
+          document.getElementById('login-screen').style.display='flex';
+          toast('Seu acesso local foi encerrado.',true);
+          prepareLogin();
+          return;
+        }
+      }catch(err){console.warn('Mudança local ignorada',err);}
+    }
     if(ev.key===ACTIVE_SESSION_KEY && !ev.newValue && CURRENT_USER){
       CURRENT_USER=null;
       if(clockInterval!==null){clearInterval(clockInterval);clockInterval=null;}

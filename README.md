@@ -1,5 +1,28 @@
 # MafiaCorp | Central da Família (FiveM / GTA RP)
 
+## Infográficos: grafo de conhecimento de roleplay
+
+A nova seção **Infográficos** é uma visualização interativa estilo Graph View do Obsidian, integrada aos cadastros do MafiaCorp.
+
+- **Visão global**: rede de personagens, contatos, associados, facções, veículos, endereços, investigações, operações, evidências, missões, locais e notas.
+- **Visão focada**: duplo clique em um nó ou botão **Focar** no painel lateral. Profundidade configurável de 1 a 3 níveis.
+- **Navegação**: pan, zoom por roda do mouse ou botões, arraste de nós, enquadramento automático, pesquisa e filtros por categoria.
+- **Painel lateral**: mostra informações selecionadas, vínculos e atalhos para cadastros; conexões manuais podem ser editadas ou excluídas.
+- **Conexões automáticas**: são derivadas dos campos já cadastrados, por exemplo investigado → facção, veículo → proprietário, caso → evidência e missão → responsável.
+- **Conexões manuais**: utilizam a coleção existente `DB.rp.links`, sem duplicar armazenamento.
+- **Notas de investigação RP**: nós personalizados com título e texto, armazenados em `DB.rp.graphNotes`.
+- **Posições salvas**: nós arrastados guardam a posição em `DB.rp.graphPositions`.
+- **Atalhos**: desde o dashboard ou o dossiê de um investigado/investigação, com foco direto no registro.
+- **Backup JSON**: já inclui notas e posições da seção, além das conexões e cadastros RP; a importação mantém compatibilidade com backups antigos que não incluem esses campos.
+
+O grafo é desenhado em **Canvas 2D sem bibliotecas externas**, com layout baseado em forças e limite de **250 nós simultaneamente visíveis** para evitar congelamentos em navegadores. Os demais registros não são apagados: use filtros ou pesquisa para visualizá-los. As relações geradas automaticamente são reconstruídas a cada visualização e não alteram suas fichas.
+
+**Atenção:** toda a base continua exclusiva do navegador local, sem sincronização nem autenticação protegida por servidor. A seção é destinada a personagens e eventos fictícios de RP, não a dossiês de pessoas reais.
+
+### Arquivos Infográficos
+- `mafia-infographics.js`: geração de nós, vínculos, layout, zoom, foco e editor de notas/conexões.
+- `mafia-infographics.css`: interface responsiva preto/grafite/prata.
+
 ## Atualização de 09/11/2026: sessão e tema Obsidian / Silver
 
 - O login local agora persiste após **F5, fechamento da aba e reabertura do navegador**, enquanto o armazenamento do site continuar disponível.

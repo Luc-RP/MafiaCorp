@@ -701,9 +701,10 @@ const NAV = [
     {id:'reports', label:'Relatórios', icon:'▦'},
     {id:'connections', label:'Conexões investigados', icon:'⬡'},
     {id:'audit', label:'Auditoria', icon:'◈'},
+    {id:'cleanup-local', label:'Limpar dados antigos', icon:'⌫'},
   ]},
 ];
-const VIEW_LABELS = {admin:'PAINEL ADMINISTRATIVO',infographics:'INFOGRÁFICOS','rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
+const VIEW_LABELS = {'cleanup-local':'LIMPEZA DE DADOS LOCAIS',admin:'PAINEL ADMINISTRATIVO',infographics:'INFOGRÁFICOS','rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
 
 function renderSidebar(){
   const nav = document.getElementById('sb-nav');
@@ -741,6 +742,9 @@ function tickClock(){
 /* ============ RENDER ROUTER ============ */
 function renderView(){
   const v = document.getElementById('view');
+  if(CURRENT_VIEW==='cleanup-local'){
+    v.innerHTML=renderLocalCleanup();wireLocalCleanup();return;
+  }
   if(CURRENT_VIEW==='admin'&&REMOTE_AUTH&&window.MafiaCloud){
     window.MafiaCloud.renderAdmin({currentUser:CURRENT_USER,openModal,closeModal,toast,isActive:()=>CURRENT_VIEW==='admin'});
     return;
@@ -783,6 +787,72 @@ function renderView(){
     case 'audit': v.innerHTML = renderAudit(); break;
     default: v.innerHTML = '<div class="empty-state">View não encontrada.</div>';
   }
+}
+
+/* ============ LIMPEZA DE DADOS LEGADOS DO NAVEGADOR ============ */
+const LEGACY_RECORD_TYPES=[
+  'investigations','suspects','vehicles','addresses','contacts','associates','factions',
+  'evidence','operations','reports','notes','timeline','audit','attachments'
+];
+function oldLocalRecordCount(){
+  const total=LEGACY_RECORD_TYPES.reduce((sum,type)=>sum+(Array.isArray(DB?.[type])?DB[type].length:0),0);
+  const rp=DB?.rp||{};
+  return total+['members','missions','goals','locations','links','graphNotes']
+    .reduce((sum,type)=>sum+(Array.isArray(rp[type])?rp[type].length:0),0);
+}
+function renderLocalCleanup(){
+  return '<div class="view-head"><div><div class="view-title">LIMPAR DADOS ANTIGOS</div>'+
+   '<div class="view-sub">Ferramenta de limpeza do armazenamento deste navegador</div></div></div>'+
+   '<div class="panel" style="padding:22px;max-width:780px">'+
+   '<h3 style="color:var(--grey-100);margin:0 0 14px">Registros locais encontrados: '+oldLocalRecordCount()+'</h3>'+
+   '<p style="color:var(--grey-300);line-height:1.8">Esta ação exclui investigações antigas, investigados, veículos, contatos, facções, evidências, missões, metas, infográficos, atividades e anexos gravados <strong>neste navegador</strong>. Não pode limpar automaticamente os dados guardados em outros dispositivos.</p>'+
+   '<p style="color:var(--grey-300);line-height:1.8;margin-top:12px">A conta PostgreSQL conectada, sua senha, sua sessão e os usuários cadastrados na Aiven serão <strong>preservados</strong>. Esta limpeza não altera o banco remoto.</p>'+
+   '<p style="color:#d2b6aa;line-height:1.8;margin:12px 0">Atenção: os registros e anexos locais serão apagados permanentemente. Faça um backup antes se houver algo que deseja manter.</p>'+
+   '<button class="btn btn-danger" id="btn-clean-local" style="width:auto">APAGAR DADOS LOCAIS ANTIGOS</button></div>';
+}
+function removeLegacyAttachments(){
+  return new Promise(resolve=>{
+    if(!window.indexedDB)return resolve(true);
+    let settled=false;
+    const done=ok=>{if(!settled){settled=true;resolve(ok);}};
+    try{
+      const request=window.indexedDB.deleteDatabase('bi_local_attachments_v1');
+      request.onsuccess=()=>done(true);
+      request.onerror=()=>done(false);
+      request.onblocked=()=>done(false);
+    }catch(err){console.warn('Falha ao limpar anexos IndexedDB',err);done(false);}
+  });
+}
+function wireLocalCleanup(){
+  const button=document.getElementById('btn-clean-local');if(!button)return;
+  button.addEventListener('click',async()=>{
+    if(!CURRENT_USER||!REMOTE_AUTH)return toast('Entre na sua conta central para executar a limpeza.',true);
+    if(!window.confirm('Apagar TODOS os registros e anexos antigos deste navegador? Esta ação é irreversível, mas sua conta PostgreSQL será preservada.'))return;
+    button.disabled=true;
+    const original=DB;
+    const liveAccount={
+      id:CURRENT_USER.id,username:CURRENT_USER.username,codename:CURRENT_USER.codename,
+      name:CURRENT_USER.name,role:CURRENT_USER.role,status:'ONLINE',
+      remoteAccount:true,lastAccess:CURRENT_USER.lastAccess
+    };
+    const fresh={users:[liveAccount],seq:{inv:0,evd:0},rp:{
+      version:1,members:[],missions:[],goals:[],locations:[],links:[],
+      graphNotes:[],graphPositions:{}
+    }};
+    for(const type of LEGACY_RECORD_TYPES)fresh[type]=[];
+    DB=fresh;
+    if(!await saveDB()){
+      DB=original;button.disabled=false;
+      return toast('Falha ao salvar base vazia. Nenhum anexo foi apagado.',true);
+    }
+    for(const key of [LEGACY_CACHE_KEY,STORAGE_KEY,LAST_VIEW_KEY]){
+      try{localStorage.removeItem(key)}catch(err){console.warn(err);}
+    }
+    const attachmentsCleared=await removeLegacyAttachments();
+    navigate('dashboard');
+    toast(attachmentsCleared?'Dados locais antigos apagados. Conta central preservada.':
+      'Registros locais zerados, mas os anexos não puderam ser removidos. Feche outras abas do MafiaCorp e tente novamente.',!attachmentsCleared);
+  });
 }
 
 /* ============ DASHBOARD ============ */

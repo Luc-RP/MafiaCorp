@@ -542,7 +542,7 @@ const ACTIVE_SESSION_KEY = 'mafiacorp_active_user_v1';
 const LAST_VIEW_KEY = 'mafiacorp_last_view_v1';
 let clockInterval = null;
 function rememberLocalSession(user){
-  try{localStorage.setItem(ACTIVE_SESSION_KEY,JSON.stringify({id:user.id,since:nowIso()}));return true;}
+  try{localStorage.setItem(ACTIVE_SESSION_KEY,JSON.stringify({id:user.id,since:nowIso(),passwordRevision:Number(user.passwordRevision||0)}));return true;}
   catch(err){console.warn('Falha ao salvar sessão no navegador',err);return false;}
 }
 function forgetLocalSession(){
@@ -553,7 +553,7 @@ function restoreLocalSession(){
   let saved=null;
   try{saved=JSON.parse(localStorage.getItem(ACTIVE_SESSION_KEY)||'null');}catch(err){console.warn('Sessão inválida',err);}
   if(!saved || typeof saved.id!=='string' || !DB || !Array.isArray(DB.users)) return null;
-  const user=DB.users.find(u=>u.id===saved.id && !u.accessDisabled && typeof u.passwordHash==='string' && u.passwordHash.length===64);
+  const user=DB.users.find(u=>u.id===saved.id && !u.accessDisabled && Number(u.passwordRevision||0)===Number(saved.passwordRevision||0) && typeof u.passwordHash==='string' && u.passwordHash.length===64);
   if(!user){forgetLocalSession();return null;}
   return user;
 }
@@ -2369,7 +2369,7 @@ function wireGlobal(){
       try{
         const latest=JSON.parse(ev.newValue||'null');
         const account=latest&&Array.isArray(latest.users)?latest.users.find(u=>u.id===CURRENT_USER.id):null;
-        if(!account || account.accessDisabled){
+        if(!account || account.accessDisabled || Number(account.passwordRevision||0)!==Number(CURRENT_USER.passwordRevision||0)){
           const localUserId=CURRENT_USER.id;
           try{const saved=JSON.parse(localStorage.getItem(ACTIVE_SESSION_KEY)||'null');if(saved&&saved.id===localUserId)forgetLocalSession();}catch(e){}
           CURRENT_USER=null;

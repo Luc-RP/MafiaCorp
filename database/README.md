@@ -1,7 +1,7 @@
 # MafiaCorp: migração de contas locais para Aiven PostgreSQL
 
 **Status em 10/11/2026:** PostgreSQL 18.6 `mafiacorp` criado e em `RUNNING` na Aiven, projeto `ldxgamess-1ba9`, plano `free-1-1gb`, banco `defaultdb`.
-Migrações `001_accounts.sql` e `002_request_limits.sql` **aplicadas**, com tabelas verificadas via consulta SQL. O login remoto **ainda não está ativo** porque faltam segredos server-side na Vercel.
+Migrações `001_accounts.sql` e `002_request_limits.sql` **aplicadas**, com quatro tabelas validadas. As variáveis `DATABASE_URL` e `AIVEN_CA_CERT` foram cadastradas como segredos de produção no Vercel, o deploy foi publicado, e `GET /api/auth?action=status` retornou `mode=remote`, `configured=true`, `online=true`, `registrationOpen=true`.
 
 ## Código de autenticação implantado
 - `server/auth-core.js` usa `pg`, TLS com validação de CA, `scrypt` com salt, sessões via cookie seguro HttpOnly e limitação de requisições.
@@ -9,22 +9,22 @@ Migrações `001_accounts.sql` e `002_request_limits.sql` **aplicadas**, com tab
 - `api/admin.js`: somente administradores autenticados, `GET` lista todas as contas do banco; `POST` cria usuários; `PATCH` bloqueia, reativa, troca senha ou cargo; `DELETE` exclui.
 - `mafia-cloud-ui.js`, `mafia-cloud-ui.css` e `index.html`: interface com nome, codinome e senha de mínimo 8 caracteres, e painel ADM central.
 - `package.json`: driver PostgreSQL para Vercel.
-- O modo remoto é ativado somente se `/api/auth?action=status` reconhecer a configuração e o banco online. Durante a preparação, a interface local existente continua ativa.
+- Autenticação **remote-only**: quando o banco/API estiver indisponível, a interface bloqueia o acesso (fail-closed), sem retornar ao login local.
 - A primeira conta central cadastrada recebe papel `observador`. A elevação do dono a `admin` só ocorre após verificação explícita pelo operador usando Aiven SQL; **o cadastro público nunca cria administrador**.
 
-## Variáveis de ambiente pendentes (somente Vercel, nunca GitHub)
+## Variáveis de ambiente configuradas (somente Vercel, nunca GitHub)
 1. `DATABASE_URL`: Service URI `postgresql://...` obtida em Aiven → serviço `mafiacorp` → Overview → Connection information.
 2. `AIVEN_CA_CERT`: conteúdo completo do certificado CA do mesmo serviço, incluindo cabeçalho e rodapé PEM, na seção Connection information.
 3. `AUTH_SIGNUP_ENABLED` (opcional): `false` fecha os novos cadastros; omitido permite cadastro.
 
-Usar variável **Sensitive** ou **Encrypted**, destino **Production**. Depois é necessário um novo deploy para as funções receberem os novos valores. `DATABASE_URL` e `AIVEN_CA_CERT` são acessados apenas pelo servidor. Não colar usuário/senha/token em arquivos estáticos.
+Ambas as variáveis estão do tipo **Sensitive** no destino **Production**; o deploy atualizado já foi publicado. `DATABASE_URL` e `AIVEN_CA_CERT` são acessados apenas pelo servidor. Não colar usuário/senha/token em arquivos estáticos.
 
-### Verificações após configurar
-- `GET /api/auth?action=status` deve retornar `{"mode":"remote","configured":true,"online":true}`.
-- Cadastrar uma conta pelo formulário público, usando **nome, codinome único e senha forte de pelo menos 8 caracteres**.
-- Conferir o registro na tabela `mc_accounts` sem revelar o hash da senha.
-- Promover **somente a conta proprietária escolhida** via comando SQL controlado e reentrar para receber papel de administrador.
-- Testar GET /api/admin, bloqueio, redefinição, exclusão e revogação de sessões em outro navegador.
+### Verificações e homologação
+- **Validado:** `GET /api/auth?action=status` retornou `mode=remote`, `configured=true`, `online=true`.
+- **Pendente:** cadastrar uma conta pelo formulário público, usando **nome, codinome único e senha forte de pelo menos 8 caracteres**.
+- **Pendente:** conferir o registro na tabela `mc_accounts` sem revelar o hash da senha.
+- **Pendente:** promover **somente a conta proprietária escolhida** via comando SQL controlado e reentrar para receber papel de administrador.
+- **Pendente:** testar GET /api/admin, bloqueio, redefinição, exclusão e revogação de sessões em outro navegador.
 
 **Limite do escopo:** este gate centraliza só as contas e sessões. Os dossiês e registros operacionais do site continuam no armazenamento local, exigindo migração própria e autorização.
 

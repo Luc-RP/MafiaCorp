@@ -48,6 +48,8 @@ export default async function handler(req,res){
    }
    let event=''; 
    if(req.method==='DELETE'){
+     const linked=await client.query('SELECT count(*)::int AS n FROM public.mc_contributions WHERE account_id=$1',[id]);
+     if(linked.rows[0].n>0){await client.query('ROLLBACK');return respond(res,409,{error:'ACCOUNT_HAS_HISTORY'});}
      await audit(actor,target,'ADMIN_DELETED_ACCOUNT',client);
      await client.query('DELETE FROM public.mc_accounts WHERE id=$1',[id]);
      event='DELETED';

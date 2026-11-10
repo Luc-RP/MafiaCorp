@@ -1,5 +1,25 @@
 # MafiaCorp | Central da Família (FiveM / GTA RP)
 
+## Painel ADM (contas locais)
+
+A aba **Painel ADM**, dentro do grupo **GESTÃO**, é visível somente a contas com papel `admin` no navegador atual. Ela organiza a administração das contas de acesso locais, sem misturá-las aos **Membros da Máfia**, que são fichas de personagens RP.
+
+- Lista de contas com login, nome, codinome, função, especialidade, estado habilitado/bloqueado e último acesso local.
+- Pesquisa e filtro por estado.
+- Criação de uma nova conta local com papel, perfil e senha inicial.
+- Ficha de usuário em modo leitura.
+- Redefinição manual da senha para uma nova senha de pelo menos 10 caracteres; senhas anteriores não podem ser visualizadas.
+- Bloqueio, reativação ou exclusão local, com confirmações. Os dossiês, relatórios e registros de RP permanecem.
+- Conta principal `u_admin` e a conta administrativa em uso protegidas contra bloqueio ou exclusão acidental.
+- A antiga página **Usuários do painel** virou uma lista de consulta com atalho administrativo, evitando dois editores divergentes.
+- Login e recuperação de sessão recusam usuários com `accessDisabled=true`. Mudanças na mesma base local detectadas por outras abas encerram as sessões correspondentes.
+
+**Limite essencial:** as contas estão no `localStorage` de **cada navegador**, não há conta central compartilhada. Um visitante novo pode criar seu próprio administrador local em seu navegador; essa conta não é controlada pelo administrador de outro dispositivo. Portanto, o Painel ADM **não consegue ver, bloquear, apagar nem redefinir remotamente** as contas das outras pessoas. Esse controle exige uma camada autenticada de servidor (não precisa ser Supabase), com armazenamento central e verificação de papéis no backend. Os controles implementados aqui são apenas gerenciamento local de perfis, **não segurança efetiva multiusuário**.
+
+### Arquivos novos
+- `mafia-admin.js`: ações e formulários administrativos locais.
+- `mafia-admin.css`: identidade Obsidian/Silver do painel.
+
 ## Infográficos: grafo de conhecimento de roleplay
 
 A nova seção **Infográficos** é uma visualização interativa estilo Graph View do Obsidian, integrada aos cadastros do MafiaCorp.

@@ -1,0 +1,13 @@
+/* Cadastro e acesso centralizado • somente habilitado quando o servidor está pronto */
+#cloud-auth-tabs[hidden],#cloud-register-form[hidden],#login-form[hidden]{display:none!important}
+.cloud-tabs{display:flex;gap:0;border:1px solid #474d55;margin:14px 0 12px;background:#111418}
+.cloud-tab{width:50%;border:0;background:transparent;padding:11px 8px;color:#aab5c1;font:11px/1.2 var(--font-mono,monospace);cursor:pointer}
+.cloud-tab.selected{color:#f0f3f6;background:#3c4551;box-shadow:inset 0 -2px 0 #e3e8f0}
+.cloud-tab:focus-visible{outline:2px solid #f2f5f8;outline-offset:-2px}
+.cloud-register{display:flex;flex-direction:column;gap:12px;padding:6px 0 8px}
+.cloud-register .field{margin:0}
+.cloud-register :is(input,button){width:100%}
+.cloud-register .field input{background:#0c0f13;border-color:#505963;color:#edf1f5}
+.cloud-register .field label{color:#bcc5cf}
+.cloud-register #cloud-register-btn{margin-top:7px}
+@media(max-width:480px){.cloud-tabs{margin-top:10px}.cloud-register{gap:9px}}

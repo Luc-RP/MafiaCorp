@@ -823,7 +823,7 @@ function renderView(){
   const v = document.getElementById('view');
   if(CURRENT_VIEW==='infographics' && window.MafiaInfographics){
     const context={db:DB,canEdit:!!canEdit(),saveDB:saveDB,navigate:navigate,renderView:renderView,openModal:openModal,closeModal:closeModal,toast:toast};
-    v.innerHTML=window.MafiaInfographics.render(DB,context);
+    v.innerHTML=window.MafiaInfographics.render(DB,context,CURRENT_PARAMS);
     window.MafiaInfographics.mount();
     return;
   }
@@ -1297,6 +1297,7 @@ function renderInvestigationDetail(id){
   return `
   <div class="view-head">
     <div class="view-sub" style="cursor:pointer" data-back>← VOLTAR PARA INVESTIGAÇÕES</div>
+    <button class="btn" data-view-inv-infographic>◇ INFOGRÁFICOS DESTA INVESTIGAÇÃO</button>
   </div>
   <div class="dossie-head">
     <div class="top">
@@ -1387,6 +1388,8 @@ function renderDossieTab(inv){
 function wireInvestigationDetail(id){
   const inv = invById(id);
   document.querySelector('[data-back]').addEventListener('click', ()=>navigate('investigations'));
+  const infographicBtn=document.querySelector('[data-view-inv-infographic]');
+  if(infographicBtn)infographicBtn.addEventListener('click',()=>navigate('infographics',{focusKey:'investigations:'+id}));
   const editBtn = document.querySelector('[data-edit-inv]');
   if(editBtn) editBtn.addEventListener('click', ()=>openEntityForm('investigations', id));
   const archBtn = document.querySelector('[data-archive-inv]');
@@ -1524,6 +1527,7 @@ function renderSuspectDetail(id){
       ${editable?`<input type="file" accept="image/*" data-photo-input style="display:none">`:''}
       <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
         <button class="btn" data-view-cmap>MAPA DE CONEXÕES</button>
+        <button class="btn" data-view-infographic>◇ ABRIR INFOGRÁFICOS</button>
         ${editable?`<button class="btn" data-edit-suspect>EDITAR DOSSIÊ</button>`:''}
       </div>
     </div>
@@ -1580,6 +1584,8 @@ function wireSuspectDetail(id){
   if(editBtn) editBtn.addEventListener('click', ()=>openEntityForm('suspects', id));
   const cmapBtn = document.querySelector('[data-view-cmap]');
   if(cmapBtn) cmapBtn.addEventListener('click', ()=>navigate('connections', {suspectId:id}));
+  const infographicBtn=document.querySelector('[data-view-infographic]');
+  if(infographicBtn)infographicBtn.addEventListener('click',()=>navigate('infographics',{focusKey:'suspects:'+id}));
   const photoBox = document.querySelector('[data-photo-box]');
   const photoInput = document.querySelector('[data-photo-input]');
   if(photoBox && photoInput){

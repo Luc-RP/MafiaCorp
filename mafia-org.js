@@ -115,10 +115,12 @@ function contributionRows(){
  '</tbody></table></div></section>';
 }
 function contributionHtml(){
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
+ const isToday=payload.date===today;
  return '<div class="org-controls"><label>Dia consultado <input id="org-date" type="date" value="'+e(payload.date)+'" max="'+e(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()))+'"></label>'+
- '<button class="org-btn" id="org-my-activity" '+(payload.ownActive?'disabled':'')+'>'+(payload.ownActive?'Atividade registrada':'Marcar que estive ativo hoje')+'</button>'+
+ '<button class="org-btn" id="org-my-activity" '+(!isToday||payload.ownActive?'disabled':'')+'>'+(isToday?(payload.ownActive?'Atividade registrada':'Marcar que estive ativo hoje'):'Somente consulta histórica')+'</button>'+
  (payload.permissions.canViewAll?'<label>Integrante<select id="org-member-filter"><option value="">Todos</option>'+payload.members.map(m=>'<option value="'+e(m.id)+'" '+(selectedMember===m.id?'selected':'')+'>'+e(m.codename)+'</option>').join('')+'</select></label>':'')+'</div>'+
- overall()+'<div class="org-columns">'+submitHtml()+missionsHtml()+'</div>'+contributionRows()+
+ overall()+'<div class="org-columns">'+(isToday?submitHtml():'<section class="org-panel"><div class="org-panel-top"><h2>Histórico de entregas</h2></div><div class="org-inner">Entregas e marcações de atividade são registradas somente no dia atual. Esta data está em modo de consulta.</div></section>')+missionsHtml()+'</div>'+contributionRows()+
  (payload.permissions.canManagePanel?'<section class="org-panel"><div class="org-panel-top"><h2>Fechamento do painel</h2>'+badge(payload.collectiveApproved>=100?'Meta coletiva atingida':'Aguardando 100%',payload.collectiveApproved>=100?'green':'')+'</div>'+
  '<div class="org-inner"><p>Somente Liderança e Gerente Geral podem registrar a escolha da produção após 100% aprovado.</p>'+
  '<form id="org-production"><input name="productionChoice" maxlength="250" placeholder="Escolha da produção RP" required value="'+e(payload.panel?.production_choice||'')+'"><button class="org-btn" '+(payload.collectiveApproved<100?'disabled':'')+'>Registrar produção</button></form></div></section>':'');

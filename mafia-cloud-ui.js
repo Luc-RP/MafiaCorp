@@ -19,7 +19,8 @@ const texts={
   SERVICE_UNAVAILABLE:'O servidor de autenticação está indisponível.',
   LAST_ADMIN_PROTECTED:'O último administrador ativo está protegido.',
   CANNOT_MODIFY_OWN_ACCOUNT:'Você não pode modificar o próprio acesso nesta tela.',
-  ROLE_OCCUPIED:'Este cargo de comando já está ocupado. Escolha outro posto ou altere o responsável atual.'
+  ROLE_OCCUPIED:'Este cargo de comando já está ocupado. Escolha outro posto ou altere o responsável atual.',
+  ACCOUNT_HAS_HISTORY:'Este integrante possui histórico de missões. Bloqueie a conta para preservar os comprovantes; a exclusão definitiva ficará para a política de retenção.'
 };
 async function api(path,method='GET',body){
   const params={method,credentials:'same-origin',cache:'no-store',headers:{'Accept':'application/json'}};

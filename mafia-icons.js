@@ -8,6 +8,7 @@
   "rp-goals": "<path d=\"M4 20V13h4v7M10 20V8h4v12M16 20V4h4v16M2 20h20\"/>",
   "rp-map": "<path d=\"m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15\"/>",
   "rp-locations": "<path d=\"M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z\"/><circle cx=\"12\" cy=\"10\" r=\"2.5\"/>",
+  "infographics": "<circle cx=\"12\" cy=\"12\" r=\"3\"/><circle cx=\"4\" cy=\"5\" r=\"2\"/><circle cx=\"20\" cy=\"6\" r=\"2\"/><circle cx=\"5\" cy=\"20\" r=\"2\"/><circle cx=\"21\" cy=\"19\" r=\"2\"/><path d=\"M6 6l4 4m5 0 4-3M9 14l-3 4m9-3 4 3\"/>",
   "rp-network": "<circle cx=\"12\" cy=\"4\" r=\"2.5\"/><circle cx=\"4\" cy=\"19\" r=\"2.5\"/><circle cx=\"20\" cy=\"19\" r=\"2.5\"/><path d=\"m11 6-6 10M13 6l6 10M7 19h10\"/>",
   "rp-backup": "<ellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\"/><path d=\"M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3\"/>",
   "investigations": "<path d=\"M3 7V4h6l2 3h10v13H3z\"/><circle cx=\"15\" cy=\"13\" r=\"3\"/><path d=\"m17 15 3 3\"/>",

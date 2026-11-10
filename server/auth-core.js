@@ -143,7 +143,7 @@ export async function dbHealth(){
   try{await database().query('SELECT 1');return true}catch{return false}
 }
 export function serverError(res,error){
-  if(error?.code==='23505')return respond(res,409,{error:'CODENAME_IN_USE'});
+  if(error?.code==='23505')return respond(res,409,{error:error.constraint==='mc_unique_command_posts'?'ROLE_OCCUPIED':'CODENAME_IN_USE'});
   if(error?.status)return respond(res,error.status,{error:error.message});
   // No SQL details, URL or environment variables in the client response.
   console.error('MafiaCorp auth error',error?.code||error?.name||'unknown');

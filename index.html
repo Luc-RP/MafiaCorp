@@ -2463,6 +2463,11 @@ async function handleLogin(ev){
 }
 
 async function handleLogout(){
+  if(REMOTE_AUTH){
+    try{await window.MafiaCloud.logout();}
+    catch(err){toast('Falha ao encerrar sessão central: '+(err.message||'Erro de rede'),true);return;}
+    try{localStorage.setItem('mafiacorp_remote_logout_v1',String(Date.now()));}catch(err){}
+  }
   // A sessão é apagada antes de salvar: recarregar durante o logout não reabre a conta.
   forgetLocalSession();
   if(CURRENT_USER){
@@ -2483,9 +2488,20 @@ async function handleLogout(){
 function wireGlobal(){
   document.getElementById('login-form').addEventListener('submit', handleLogin);
   document.getElementById('btn-logout').addEventListener('click', handleLogout);
+  document.getElementById('cloud-register-form').addEventListener('submit',handleRemoteRegistration);
+  document.getElementById('cloud-show-login').addEventListener('click',()=>showRemoteLoginMode(false));
+  document.getElementById('cloud-show-signup').addEventListener('click',()=>showRemoteLoginMode(true));
   // Logout em outra aba também encerra esta sessão local.
   window.addEventListener('storage',ev=>{
-    if(ev.key===LOCAL_DB_KEY && CURRENT_USER){
+    if(ev.key==='mafiacorp_remote_logout_v1'&&REMOTE_AUTH&&CURRENT_USER){
+      CURRENT_USER=null;
+      if(clockInterval!==null){clearInterval(clockInterval);clockInterval=null;}
+      document.getElementById('app').style.display='none';
+      document.getElementById('login-screen').style.display='flex';
+      showRemoteLoginMode(false);
+      return;
+    }
+    if(!REMOTE_AUTH&&ev.key===LOCAL_DB_KEY && CURRENT_USER){
       try{
         const latest=JSON.parse(ev.newValue||'null');
         const account=latest&&Array.isArray(latest.users)?latest.users.find(u=>u.id===CURRENT_USER.id):null;
@@ -2545,6 +2561,7 @@ async function init(){
   wireGlobal();
   const found = await loadDB();
   if(!found) await seedDB();
+  if(await initializeCentralAuth())return;
   const sessionUser=restoreLocalSession();
   if(sessionUser){showSignedIn(sessionUser,true);return;}
   prepareLogin();

@@ -2,6 +2,7 @@
 import { Pool } from 'pg';
 import { randomBytes, createHash, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
+import { permissionsFor } from './org-roles.js';
 
 const scrypt=promisify(scryptCallback);
 const SESSION_COOKIE='__Host-mc_session';
@@ -67,7 +68,7 @@ export function passwordPolicy(password,codename=''){
 
 export function profile(row){
   return {id:row.id,name:row.name,codename:row.codename,username:row.codename,
-    role:row.role,isActive:row.is_active,createdAt:row.created_at,lastAccess:row.last_login_at};
+    role:row.role,orgRole:row.org_role||'membro',permissions:permissionsFor(row),isActive:row.is_active,createdAt:row.created_at,lastAccess:row.last_login_at};
 }
 
 export async function hashPassword(password){
@@ -113,7 +114,7 @@ export async function createSession(account,res,client=database()){
 }
 export async function userFromRequest(req,client=database()){
   const token=readCookie(req);if(!token)return null;
-  const result=await client.query(`SELECT a.id,a.name,a.codename,a.role,a.is_active,a.created_at,a.last_login_at,
+  const result=await client.query(`SELECT a.id,a.name,a.codename,a.role,a.org_role,a.is_active,a.created_at,a.last_login_at,
     a.password_revision,s.token_hash
     FROM public.mc_sessions s JOIN public.mc_accounts a ON a.id=s.account_id
     WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now()

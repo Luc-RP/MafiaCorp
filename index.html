@@ -2352,23 +2352,15 @@ function showRemoteLoginMode(register){
   document.getElementById('login-error').style.display='none';
 }
 async function initializeCentralAuth(){
-  if(!window.MafiaCloud)return false;
-  let state=null;
-  let known=false;
-  try{known=localStorage.getItem(REMOTE_AUTH_MARKER)==='1';}catch(err){}
-  try{state=await window.MafiaCloud.status();}
-  catch(err){
-    if(err.status===503||known){REMOTE_AUTH=true;remoteUnavailable();return true;}
-    return false;
-  }
-  if(state.mode!=='remote'){
-    if(known){REMOTE_AUTH=true;remoteUnavailable();return true;}
-    return false;
-  }
+  // Centralização ativada: falhar de modo fechado; não oferecer login local alternativo.
   REMOTE_AUTH=true;
+  if(!window.MafiaCloud){remoteUnavailable();return true;}
+  let state=null;
+  try{state=await window.MafiaCloud.status();}
+  catch(err){remoteUnavailable();return true;}
+  if(state.mode!=='remote'||!state.online){remoteUnavailable();return true;}
   try{localStorage.setItem(REMOTE_AUTH_MARKER,'1');}catch(err){}
   prepareLogin();
-  if(!state.online){remoteUnavailable();return true;}
   try{
     const current=await window.MafiaCloud.me();
     if(current&&current.user){showSignedIn(remoteUserProfile(current.user),true);return true;}

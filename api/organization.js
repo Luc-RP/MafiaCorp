@@ -81,7 +81,11 @@ export default async function handler(req,res){
     const image=body.evidenceData==null?null:String(body.evidenceData);
     if(!note&&!image)return respond(res,400,{error:'EVIDENCE_REQUIRED'});
     if(note.length>400)return respond(res,400,{error:'NOTE_TOO_LONG'});
-    if(image && (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image)||image.length>145000))return respond(res,400,{error:'INVALID_EVIDENCE'});
+    if(image){
+      if(!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image)||image.length>145000)return respond(res,400,{error:'INVALID_EVIDENCE'});
+      const data=Buffer.from(image.slice('data:image/jpeg;base64,'.length),'base64');
+      if(data.length>110000||data.length<4||data[0]!==255||data[1]!==216||data[2]!==255)return respond(res,400,{error:'INVALID_EVIDENCE'});
+    }
     await db.query("INSERT INTO public.mc_daily_activity(account_id,activity_date) VALUES($1,$2) ON CONFLICT DO NOTHING",[actor.id,today]);
     const saved=await db.query("INSERT INTO public.mc_contributions(account_id,activity_date,mission_type,points,note,evidence_data) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,status,points",[actor.id,today,kind,MISSION_POINTS[kind],note||null,image]);
     return respond(res,201,{ok:true,contribution:saved.rows[0]});

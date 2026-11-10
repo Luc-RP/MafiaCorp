@@ -1,0 +1,11 @@
+{
+  "name": "mafiacorp",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MafiaCorp RP site and PostgreSQL authenticated Vercel functions",
+  "engines": {"node": ">=22"},
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}

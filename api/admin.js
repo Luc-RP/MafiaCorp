@@ -25,7 +25,7 @@ export default async function handler(req,res){
   if(req.method==='POST'){
    const name=String(body.name||'').trim(),codename=String(body.codename||'').trim();
    if(name.length<2||name.length>120||!CODENAME.test(codename)||!passwordPolicy(body.password,codename))return respond(res,400,{error:'INVALID_PROFILE_OR_PASSWORD'});
-   const orgRole=ROLE_DEFS[body.orgRole]?body.orgRole:'membro';
+   const orgRole=Object.prototype.hasOwnProperty.call(ROLE_DEFS,body.orgRole)?body.orgRole:'membro';
    const role=platformRoleFor(orgRole);
    const hash=await hashPassword(body.password);
    const result=await db.query(`INSERT INTO public.mc_accounts(name,codename,password_hash,role,org_role)
@@ -64,7 +64,7 @@ export default async function handler(req,res){
        await client.query('UPDATE public.mc_accounts SET password_hash=$2,password_revision=password_revision+1,updated_at=now(),failed_signins=0,locked_until=NULL WHERE id=$1',[id,hash]);
        await client.query('UPDATE public.mc_sessions SET revoked_at=now() WHERE account_id=$1 AND revoked_at IS NULL',[id]);
        event='ADMIN_RESET_PASSWORD';
-     }else if(op==='orgRole'&&ROLE_DEFS[body.orgRole]){
+     }else if(op==='orgRole'&&Object.prototype.hasOwnProperty.call(ROLE_DEFS,body.orgRole)){
        const newRole=String(body.orgRole);
        await client.query('UPDATE public.mc_accounts SET role=$2,org_role=$3,updated_at=now() WHERE id=$1',[id,platformRoleFor(newRole),newRole]);
        await client.query('UPDATE public.mc_sessions SET revoked_at=now() WHERE account_id=$1 AND revoked_at IS NULL',[id]);

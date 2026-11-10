@@ -18,7 +18,8 @@ const texts={
   FORBIDDEN:'Sua conta não tem permissão de administrador.',
   SERVICE_UNAVAILABLE:'O servidor de autenticação está indisponível.',
   LAST_ADMIN_PROTECTED:'O último administrador ativo está protegido.',
-  CANNOT_MODIFY_OWN_ACCOUNT:'Você não pode modificar o próprio acesso nesta tela.'
+  CANNOT_MODIFY_OWN_ACCOUNT:'Você não pode modificar o próprio acesso nesta tela.',
+  ROLE_OCCUPIED:'Este cargo de comando já está ocupado. Escolha outro posto ou altere o responsável atual.'
 };
 async function api(path,method='GET',body){
   const params={method,credentials:'same-origin',cache:'no-store',headers:{'Accept':'application/json'}};

@@ -167,7 +167,7 @@
       '</div>'+
       '<div class="rp-dash-bottom">'+
         '<section class="rp-panel"><div class="rp-panel-head"><h3>⚔ Inteligência / facções</h3>'+btn('Ver facções','go','factions')+'</div><div class="rp-panel-inner rp-faction-list">'+factions+'</div></section>'+
-        '<section class="rp-panel"><div class="rp-panel-head"><h3>◇ Mapa de conexões</h3>'+btn('Abrir relações','go','rp-network')+'</div><div class="rp-connect-preview"><div class="rp-node central">FAMÍLIA</div><span></span><div class="rp-node">MEMBROS</div><span></span><div class="rp-node">FACÇÕES</div><p>'+list('links').length+' vínculo(s) registrados</p></div></section>'+
+        '<section class="rp-panel"><div class="rp-panel-head"><h3>◇ Infográficos</h3>'+btn('Explorar grafo','go','infographics')+'</div><div class="rp-connect-preview"><div class="rp-node central">FAMÍLIA</div><span></span><div class="rp-node">MEMBROS</div><span></span><div class="rp-node">FACÇÕES</div><p>'+list('links').length+' vínculo(s) manuais. Outras relações surgem das fichas.</p></div></section>'+
       '</div>'+
       '<div class="rp-dashboard-foot">INTERFACE DE ROLEPLAY · DADOS LOCAIS DO NAVEGADOR · NÃO SINCRONIZADO</div></section>';
   }

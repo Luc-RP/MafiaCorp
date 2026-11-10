@@ -128,7 +128,7 @@ function dispatch(action,id){
 async function refresh(){
  const res=await api(ADMIN);
  users=res.users||[];
- const root=document.getElementById('view');if(!root)return;
+ const root=document.getElementById('view');if(!root||(ctx.isActive&&!ctx.isActive()))return;
  root.innerHTML=adminHtml();wire();
 }
 function wire(){
@@ -142,7 +142,7 @@ async function renderAdmin(context){
  const root=document.getElementById('view');if(!root)return;
  root.innerHTML='<div class="am-shell"><h1>Painel ADM</h1><p>Consultando contas do servidor...</p></div>';
  try{await refresh();}
- catch(err){root.innerHTML='<div class="am-shell"><h1>Não foi possível consultar as contas</h1><p>'+esc(err.message)+'</p></div>';}
+ catch(err){if(!ctx.isActive||ctx.isActive())root.innerHTML='<div class="am-shell"><h1>Não foi possível consultar as contas</h1><p>'+esc(err.message)+'</p></div>';}
 }
 window.MafiaCloud={status,login,register,me,logout,renderAdmin};
 })();

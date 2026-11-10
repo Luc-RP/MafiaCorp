@@ -8,7 +8,7 @@ A aba **Painel ADM**, dentro do grupo **GESTÃO**, é visível somente a contas 
 - Pesquisa e filtro por estado.
 - Criação de uma nova conta local com papel, perfil e senha inicial.
 - Ficha de usuário em modo leitura.
-- Redefinição manual da senha para uma nova senha de pelo menos 10 caracteres; senhas anteriores não podem ser visualizadas.
+- Redefinição manual da senha para uma nova senha de pelo menos 10 caracteres; senhas anteriores não podem ser visualizadas. A troca incrementa a revisão da senha, invalidando sessões locais antigas no próximo carregamento (ou imediatamente nas outras abas sincronizadas).
 - Bloqueio, reativação ou exclusão local, com confirmações. Os dossiês, relatórios e registros de RP permanecem.
 - Conta principal `u_admin` e a conta administrativa em uso protegidas contra bloqueio ou exclusão acidental.
 - A antiga página **Usuários do painel** virou uma lista de consulta com atalho administrativo, evitando dois editores divergentes.

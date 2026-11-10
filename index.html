@@ -2304,15 +2304,115 @@ async function generateReport(investigationId){
 /* ============ USER FORM (team management) ============ */
 /* Cadastro e alterações de contas consolidados no Painel ADM. */
 function prepareLogin(){
+  if(REMOTE_AUTH){
+    const label=document.querySelector('.login-restricted');
+    if(label)label.textContent='CONTAS VERIFICADAS PELO SERVIDOR';
+    document.getElementById('login-btn').textContent='Entrar';
+    document.getElementById('cloud-auth-tabs').hidden=false;
+    document.getElementById('auth-footnote').textContent='Sua conta é validada pelo servidor. Os cadastros de investigação existentes neste navegador ainda são locais.';
+    return;
+  }
   const admin=DB && DB.users.find(u=>u.id==='u_admin');
   const first=!!(admin&&!admin.passwordHash);
   const label=document.querySelector('.login-restricted');
   if(label)label.textContent=first?'PRIMEIRO ACESSO · CRIE SEU LOGIN LOCAL':'ACESSO LOCAL · NÃO SINCRONIZADO';
   document.getElementById('login-btn').textContent=first?'Criar acesso local':'Entrar';
 }
+/* ============ CENTRAL AUTH (verificado pelo backend Aiven) ============ */
+function remoteUserProfile(profile){
+  const account={
+    id:profile.id,username:profile.codename,codename:profile.codename,
+    name:profile.name,role:profile.role,status:'ONLINE',
+    lastAccess:profile.lastAccess||nowIso(),remoteAccount:true
+  };
+  const current=DB.users.find(x=>x.id===account.id);
+  if(current)Object.assign(current,account);
+  else DB.users.push(account);
+  return account;
+}
+function remoteUnavailable(){
+  REMOTE_UNAVAILABLE=true;
+  document.getElementById('login-form').hidden=true;
+  document.getElementById('cloud-register-form').hidden=true;
+  document.getElementById('cloud-auth-tabs').hidden=true;
+  const msg=document.getElementById('login-error');
+  msg.textContent='O servidor de autenticação está indisponível. Seus dados locais foram preservados.';
+  msg.style.display='block';
+  const tag=document.querySelector('.login-restricted');
+  if(tag)tag.textContent='CONEXÃO CENTRAL INDISPONÍVEL';
+}
+function showRemoteLoginMode(register){
+  const tabs=document.getElementById('cloud-auth-tabs');
+  tabs.hidden=false;
+  document.getElementById('login-form').hidden=register;
+  document.getElementById('cloud-register-form').hidden=!register;
+  document.getElementById('cloud-show-login').classList.toggle('selected',!register);
+  document.getElementById('cloud-show-signup').classList.toggle('selected',register);
+  document.getElementById('login-error').style.display='none';
+}
+async function initializeCentralAuth(){
+  if(!window.MafiaCloud)return false;
+  let state=null;
+  let known=false;
+  try{known=localStorage.getItem(REMOTE_AUTH_MARKER)==='1';}catch(err){}
+  try{state=await window.MafiaCloud.status();}
+  catch(err){
+    if(err.status===503||known){REMOTE_AUTH=true;remoteUnavailable();return true;}
+    return false;
+  }
+  if(state.mode!=='remote'){
+    if(known){REMOTE_AUTH=true;remoteUnavailable();return true;}
+    return false;
+  }
+  REMOTE_AUTH=true;
+  try{localStorage.setItem(REMOTE_AUTH_MARKER,'1');}catch(err){}
+  prepareLogin();
+  if(!state.online){remoteUnavailable();return true;}
+  try{
+    const current=await window.MafiaCloud.me();
+    if(current&&current.user){showSignedIn(remoteUserProfile(current.user),true);return true;}
+  }catch(err){
+    if(err.status!==401){remoteUnavailable();return true;}
+  }
+  showRemoteLoginMode(false);
+  return true;
+}
+async function handleRemoteRegistration(ev){
+  ev.preventDefault();
+  if(!REMOTE_AUTH||REMOTE_UNAVAILABLE)return;
+  const form=ev.currentTarget,btn=document.getElementById('cloud-register-btn');
+  const input=new FormData(form);
+  const password=String(input.get('password')||'');
+  const error=document.getElementById('login-error');
+  error.style.display='none';
+  if(password!==input.get('confirm')){
+    error.textContent='As senhas digitadas são diferentes.';error.style.display='block';return;
+  }
+  btn.disabled=true;btn.textContent='Criando conta...';
+  try{
+    const response=await window.MafiaCloud.register(input.get('name'),input.get('codename'),password);
+    if(!response.user)throw Error('Cadastro não confirmado pelo servidor.');
+    showSignedIn(remoteUserProfile(response.user),false);
+  }catch(err){error.textContent=err.message||'Erro de cadastro.';error.style.display='block';}
+  finally{btn.disabled=false;btn.textContent='Criar conta';}
+}
 /* ============ AUTH FLOW ============ */
 async function handleLogin(ev){
   ev.preventDefault();
+  if(REMOTE_AUTH){
+    if(REMOTE_UNAVAILABLE)return;
+    const account=document.getElementById('login-user').value.trim();
+    const password=document.getElementById('login-pass').value;
+    const error=document.getElementById('login-error'),button=document.getElementById('login-btn');
+    error.style.display='none';button.disabled=true;button.textContent='Autenticando no servidor...';
+    try{
+      const result=await window.MafiaCloud.login(account,password);
+      if(!result.user)throw Error('Login não confirmado.');
+      showSignedIn(remoteUserProfile(result.user),false);
+    }catch(err){error.textContent=err.message||'Falha de autenticação.';error.style.display='block';}
+    finally{button.disabled=false;button.textContent='Entrar';}
+    return;
+  }
   const username = document.getElementById('login-user').value.trim();
   const password = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-error');

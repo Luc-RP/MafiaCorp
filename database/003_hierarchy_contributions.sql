@@ -13,14 +13,18 @@ CREATE TABLE IF NOT EXISTS public.mc_contributions (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  account_id uuid NOT NULL REFERENCES public.mc_accounts(id) ON DELETE CASCADE,
  activity_date date NOT NULL,
- mission_type varchar(20) NOT NULL CHECK (mission_type IN ('aeronave','caminhao','submarino','cargueiro')),
- points smallint GENERATED ALWAYS AS (CASE WHEN mission_type='aeronave' THEN 10 ELSE 5 END) STORED,
+ mission_type varchar(20) NOT NULL,
+ points smallint NOT NULL,
  note varchar(400),
- evidence_data text CHECK (evidence_data IS NULL OR (char_length(evidence_data)<=170000 AND evidence_data LIKE 'data:image/jpeg;base64,%')),
- status varchar(15) NOT NULL DEFAULT 'pendente' CHECK(status IN ('pendente','aprovado','rejeitado')),
+ evidence_data text,
+ status varchar(15) NOT NULL DEFAULT 'pendente',
  reviewed_by uuid REFERENCES public.mc_accounts(id) ON DELETE SET NULL,
  reviewed_at timestamptz,
- created_at timestamptz NOT NULL DEFAULT now()
+ created_at timestamptz NOT NULL DEFAULT now(),
+ CONSTRAINT mc_contrib_mission_valid CHECK (mission_type IN ('aeronave','caminhao','submarino','cargueiro')),
+ CONSTRAINT mc_contrib_points_valid CHECK ((mission_type='aeronave' AND points=10) OR (mission_type<>'aeronave' AND points=5)),
+ CONSTRAINT mc_contrib_status_valid CHECK (status IN ('pendente','aprovado','rejeitado')),
+ CONSTRAINT mc_contrib_evidence_valid CHECK (evidence_data IS NULL OR char_length(evidence_data)<=170000)
 );
 CREATE INDEX IF NOT EXISTS mc_contrib_date_status ON public.mc_contributions(activity_date,status,account_id);
 CREATE INDEX IF NOT EXISTS mc_contrib_account_date ON public.mc_contributions(account_id,activity_date DESC);

@@ -1,5 +1,15 @@
 # MafiaCorp | Central da Família (FiveM / GTA RP)
 
+## Limpeza de registros antigos (novo gate)
+
+- O PostgreSQL da Aiven foi inspecionado em 10/11/2026: há uma única conta central (`Luc`, papel `observador`), uma sessão, um evento de autenticação e um registro de limite de requisições. **Não havia dossiês ou registros de RP antigos no PostgreSQL**. Nenhuma linha do PostgreSQL foi excluída.
+- A função obsoleta `seedDemoData()`, com investigação, suspeitos e registros fictícios antigos, foi retirada do `index.html`; `seedDB()` continua criando somente uma estrutura vazia de contingência para o armazenamento local.
+- A opção **GESTÃO → Limpar dados antigos** permite limpar, após confirmação explícita, a base operacional deste **navegador**. Remove cadastros de investigação, RP, conexões, relatórios, atividade, auditoria local, metadados de anexos e o IndexedDB `bi_local_attachments_v1`.
+- A rotina preserva o cookie HttpOnly e a conta PostgreSQL; após a limpeza, recria apenas a referência ao perfil remoto atual para a interface continuar funcionando.
+- Também elimina as chaves locais antigas `bi_local_cache_v1` e `bi_core_db_v1`; a base atual `bi_offline_db_v2` é substituída por uma estrutura vazia.
+- **A remoção não é automática e não alcança outros navegadores.** Isso evita destruir sem confirmação os registros que outras pessoas possam estar usando. O usuário precisa acionar a ferramenta no próprio navegador.
+- Teste simulado: base com investigações, evidência, anexo, RP e usuário local foi zerada; perfil remoto continuou disponível e chaves legadas foram removidas.
+
 ## Autenticação central Aiven PostgreSQL (ATIVA)
 
 **Em 10/11/2026**, o serviço PostgreSQL 18.6 `mafiacorp` (Aiven Free) está `RUNNING`; o Vercel recebeu as variáveis privadas `DATABASE_URL` e `AIVEN_CA_CERT` como segredos de produção. Um deploy de produção retornou `READY` e o endpoint `/api/auth?action=status` respondeu `{"mode":"remote","configured":true,"online":true,"registrationOpen":true}`.

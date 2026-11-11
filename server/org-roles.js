@@ -14,8 +14,8 @@ export const ROLE_DEFS={
 };
 export const MISSION_POINTS={aeronave:10,caminhao:5,submarino:5,cargueiro:5};
 export const MISSION_LABELS={aeronave:'Aeronave',caminhao:'Caminhão',submarino:'Submarino',cargueiro:'Cargueiro'};
-const FULL=['dashboard','hierarquia','contribuicoes','roster','rp-members','rp-missions','rp-goals','rp-map','rp-locations','rp-network','infographics','rp-backup','investigations','suspects','vehicles','addresses','contacts','associates','factions','evidence','operations','team','admin','reports','connections','audit','cleanup-local'];
-const COMMON=['dashboard','hierarquia','contribuicoes','roster'];
+const FULL=['perfil','dashboard','hierarquia','contribuicoes','roster','rp-members','rp-missions','rp-goals','rp-map','rp-locations','rp-network','infographics','rp-backup','investigations','suspects','vehicles','addresses','contacts','associates','factions','evidence','operations','team','admin','reports','connections','audit','cleanup-local'];
+const COMMON=['perfil','dashboard','hierarquia','contribuicoes','roster'];
 const views={
  admin_sistema:FULL,
  lider_01:FULL,lider_02:FULL,lider_03:FULL,
@@ -30,7 +30,8 @@ const views={
 export const LEADERS=new Set(['lider_01','lider_02','lider_03']);
 export const ADMINS=new Set(['admin_sistema','lider_01','lider_02','lider_03']);
 export const ROLE_KEYS=Object.keys(ROLE_DEFS);
-export function orgRole(user){const key=typeof user==='string'?user:user?.org_role||user?.orgRole;return ROLE_DEFS[key]?key:'membro';}
+export const ASSIGNABLE_VIEWS=FULL.filter(v=>!['admin','cleanup-local','rp-backup'].includes(v));
+export function orgRole(user){const key=typeof user==='string'?user:user?.org_role||user?.orgRole;return ROLE_DEFS[key]||user?.role_code===key?key:'membro';}
 export function platformRoleFor(key){
  if(ADMINS.has(key))return 'admin';
  if(key==='gerente_geral')return 'chefe';
@@ -39,12 +40,24 @@ export function platformRoleFor(key){
 }
 export function permissionsFor(user){
  const role=orgRole(user),def=ROLE_DEFS[role];
- return {orgRole:role,label:def.label,section:def.section,accessPercent:def.access,description:def.summary,
-   views:views[role],canViewAll:ADMINS.has(role)||['gerente_geral','gerente_farm'].includes(role),
-   canReview:ADMINS.has(role)||['gerente_geral','gerente_farm'].includes(role),
-   canManagePanel:ADMINS.has(role)||role==='gerente_geral',
-   canAssignRoles:ADMINS.has(role),
-   canManageAccounts:ADMINS.has(role),
+ const custom=!def&&user&&user.role_code===role;
+ const systemAdmin=Boolean(user&&user.is_system_admin);
+ let viewsForRole=def?views[role]:custom&&Array.isArray(user.role_views)?
+    user.role_views.filter(v=>ASSIGNABLE_VIEWS.includes(v)):COMMON;
+ viewsForRole=Array.from(new Set(['perfil','dashboard','hierarquia','roster','contribuicoes',...viewsForRole]));
+ const access=def?def.access:custom?Math.max(0,Math.min(95,Number(user.role_access)||25)):25;
+ const label=def?.label||user?.role_label||'Integrante';
+ const section=def?.section||user?.role_section||'Setores';
+ const summary=def?.summary||user?.role_summary||'Cargo personalizado de RP';
+ const isLeader=ADMINS.has(role),isStaff=isLeader||systemAdmin;
+ return {orgRole:role,label,section,accessPercent:systemAdmin?100:access,
+   description:summary,views:systemAdmin?FULL:viewsForRole,
+   isSystemAdmin:systemAdmin,
+   canViewAll:systemAdmin||isLeader||['gerente_geral','gerente_farm'].includes(role)||Boolean(custom&&user.role_can_view_all),
+   canReview:systemAdmin||isLeader||['gerente_geral','gerente_farm'].includes(role)||Boolean(custom&&user.role_can_review),
+   canManagePanel:systemAdmin||isLeader||role==='gerente_geral'||Boolean(custom&&user.role_can_manage_panel),
+   canAssignRoles:isStaff,
+   canManageAccounts:isStaff,
    canSubmit:role!=='admin_sistema'};
 }
 export function permission(user,key){return Boolean(permissionsFor(user)[key]);}

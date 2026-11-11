@@ -157,6 +157,18 @@ function submitHtml(){
  '<label>Print leve (opcional)<input name="photo" type="file" accept="image/*" id="org-photo"><small id="org-photo-label">JPEG, PNG ou WEBP. Compressão automática.</small></label>'+
  '<button class="org-btn primary" type="submit">Enviar para aprovação</button></form></div></section>';
 }
+function reviewQueueHtml(){
+ if(!payload.permissions.canReview)return '';
+ const queue=payload.reviewQueue||[];
+ return '<section class="org-panel org-review-queue"><div class="org-panel-top"><h2>Entregas aguardando minha aprovação</h2><span>'+queue.length+' pendente(s) de outros integrantes</span></div>'+
+ (queue.length?'<div class="org-log-table-wrap"><table class="org-log-table"><thead><tr><th>Integrante</th><th>Data</th><th>Missão / Log</th><th>Valor</th><th>Print</th><th>Conferência</th></tr></thead><tbody>'+
+ queue.map(item=>'<tr><td>'+e(item.codename)+'</td><td>'+e(item.day.split('-').reverse().join('/'))+'</td>'+
+ '<td><strong>'+e(MISSIONS[item.missionType]?.[0]||item.missionType)+'</strong><small>'+e(item.note||'Sem log escrito')+'</small></td>'+
+ '<td>'+Number(item.points)+'%</td><td>'+(item.hasEvidence?'<button class="org-btn small" data-org-evidence="'+e(item.id)+'">Ver print</button>':'Somente log')+'</td>'+
+ '<td><button class="org-btn small" data-org-review="'+e(item.id)+'" data-status="aprovado">Aprovar</button> '+
+ '<button class="org-btn small muted" data-org-review="'+e(item.id)+'" data-status="rejeitado">Rejeitar</button></td></tr>').join('')+'</tbody></table></div>':
+ '<p class="org-review-empty">Nenhuma entrega de outro integrante aguarda sua aprovação. As suas próprias entregas precisam da conferência de outro responsável autorizado.</p>')+'</section>';
+}
 function contributionRows(){
  const list=(payload.contributions||[]).filter(item=>!selectedMember||item.accountId===selectedMember);
  return '<section class="org-panel"><div class="org-panel-top"><h2>Registro de entregas</h2><span>'+list.length+' registro(s)</span></div>'+
@@ -168,7 +180,7 @@ function contributionRows(){
  '<td>'+(item.hasEvidence?'<button class="org-btn small" data-org-evidence="'+e(item.id)+'">Ver print</button>':'Somente log')+'</td>'+
  '<td>'+(payload.permissions.canReview&&item.status==='pendente'&&item.accountId!==ctx.currentUser.id?
  '<button class="org-btn small" data-org-review="'+e(item.id)+'" data-status="aprovado">Aprovar</button> '+
- '<button class="org-btn small muted" data-org-review="'+e(item.id)+'" data-status="rejeitado">Rejeitar</button>':'—')+'</td></tr>').join(''):'<tr><td colspan="6" class="org-empty">Ainda não existem entregas nesta data.</td></tr>')+
+ '<button class="org-btn small muted" data-org-review="'+e(item.id)+'" data-status="rejeitado">Rejeitar</button>':item.status==='pendente'&&item.accountId===ctx.currentUser.id?'Sua entrega · outro responsável deve aprovar':'—')+'</td></tr>').join(''):'<tr><td colspan="6" class="org-empty">Ainda não existem entregas nesta data.</td></tr>')+
  '</tbody></table></div></section>';
 }
 function contributionHtml(){
@@ -178,7 +190,7 @@ function contributionHtml(){
  '<div class="org-controls"><label>Dia consultado <input id="org-date" type="date" value="'+e(payload.date)+'" max="'+e(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()))+'"></label>'+
  (payload.permissions.canSubmit?'<button class="org-btn" id="org-my-activity" '+(!isToday||payload.ownActive?'disabled':'')+'>'+(isToday?(payload.ownActive?'Atividade registrada':'Marcar que estive ativo hoje'):'Somente consulta histórica')+'</button>':'')+
  (payload.permissions.canViewAll?'<label>Integrante<select id="org-member-filter"><option value="">Todos</option>'+payload.members.map(m=>'<option value="'+e(m.id)+'" '+(selectedMember===m.id?'selected':'')+'>'+e(m.codename)+'</option>').join('')+'</select></label>':'')+'</div>'+
- overall()+'<div class="org-columns">'+(isToday&&payload.permissions.canSubmit?submitHtml():'<section class="org-panel"><div class="org-panel-top"><h2>Histórico de entregas</h2></div><div class="org-inner">Entregas e marcações de atividade são registradas somente no dia atual. Esta data está em modo de consulta.</div></section>')+missionsHtml()+'</div>'+contributionRows()+
+ overall()+reviewQueueHtml()+'<div class="org-columns">'+(isToday&&payload.permissions.canSubmit?submitHtml():'<section class="org-panel"><div class="org-panel-top"><h2>Histórico de entregas</h2></div><div class="org-inner">Entregas e marcações de atividade são registradas somente no dia atual. Esta data está em modo de consulta.</div></section>')+missionsHtml()+'</div>'+contributionRows()+
  (payload.permissions.canManagePanel?'<section class="org-panel"><div class="org-panel-top"><h2>Fechamento do painel</h2>'+badge(payload.collectiveApproved>=100?'Meta coletiva atingida':'Aguardando 100%',payload.collectiveApproved>=100?'green':'')+'</div>'+
  '<div class="org-inner"><p>Somente Liderança e Gerente Geral podem registrar a escolha da produção após 100% aprovado.</p>'+
  '<form id="org-production"><input name="productionChoice" maxlength="250" placeholder="Escolha da produção RP" required value="'+e(payload.panel?.production_choice||'')+'"><button class="org-btn" '+(payload.collectiveApproved<100?'disabled':'')+'>Registrar produção</button></form></div></section>':'');

@@ -55,6 +55,7 @@ export function permissionsFor(user){
    isSystemAdmin:systemAdmin,
    canViewAll:systemAdmin||isLeader||['gerente_geral','gerente_farm'].includes(role)||Boolean(custom&&user.role_can_view_all),
    canReview:systemAdmin||['lider_01','lider_02','lider_03','gerente_geral','gerente_farm'].includes(role),
+   canSelfReview:systemAdmin||['lider_01','lider_02','lider_03'].includes(role),
    canManagePanel:systemAdmin||isLeader||role==='gerente_geral'||Boolean(custom&&user.role_can_manage_panel),
    canAssignRoles:isStaff,
    canManageAccounts:isStaff,

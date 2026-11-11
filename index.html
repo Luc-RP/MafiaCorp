@@ -406,6 +406,7 @@ tbody tr:last-child td{border-bottom:none;}
 <link rel="stylesheet" href="/mafia-admin.css">
 <link rel="stylesheet" href="/mafia-cloud-ui.css">
 <link rel="stylesheet" href="/mafia-org.css">
+<link rel="stylesheet" href="/mafia-profile.css">
 </head>
 <body>
 
@@ -485,6 +486,7 @@ tbody tr:last-child td{border-bottom:none;}
 <script src="/mafia-admin.js"></script>
 <script src="/mafia-cloud-ui.js"></script>
 <script src="/mafia-org.js"></script>
+<script src="/mafia-profile.js"></script>
 <script>
 (function(){
 "use strict";
@@ -710,6 +712,7 @@ const NAV = [
     {id:'operations', label:'Operações', icon:'⚑'},
   ]},
   {group:'GESTÃO', items:[
+    {id:'perfil', label:'Meu Perfil', icon:'☻'},
     {id:'team', label:'Usuários do painel', icon:'☰'},
     {id:'admin', label:'Painel ADM', icon:'⚿'},
     {id:'reports', label:'Relatórios', icon:'▦'},
@@ -718,7 +721,7 @@ const NAV = [
     {id:'cleanup-local', label:'Limpar dados antigos', icon:'⌫'},
   ]},
 ];
-const VIEW_LABELS = {hierarquia:'HIERARQUIA DA ORGANIZAÇÃO',roster:'INTEGRANTES E RESULTADOS',contribuicoes:'METAS E CONTRIBUIÇÕES','cleanup-local':'LIMPEZA DE DADOS LOCAIS',admin:'PAINEL ADMINISTRATIVO',infographics:'INFOGRÁFICOS','rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
+const VIEW_LABELS = {perfil:'MEU PERFIL',hierarquia:'HIERARQUIA DA ORGANIZAÇÃO',roster:'INTEGRANTES E RESULTADOS',contribuicoes:'METAS E CONTRIBUIÇÕES','cleanup-local':'LIMPEZA DE DADOS LOCAIS',admin:'PAINEL ADMINISTRATIVO',infographics:'INFOGRÁFICOS','rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
 
 function renderSidebar(){
   const nav = document.getElementById('sb-nav');
@@ -729,9 +732,16 @@ function renderSidebar(){
   nav.querySelectorAll('.sb-item').forEach(el=>{
     el.addEventListener('click', ()=>{ navigate(el.dataset.nav); document.getElementById('sidebar').classList.remove('open'); });
   });
-  document.getElementById('sb-av').textContent = (CURRENT_USER.codename||CURRENT_USER.name||'?').slice(0,2).toUpperCase();
+  const avatar=document.getElementById('sb-av');
+  const pic=CURRENT_USER.avatarData;
+  if(typeof pic==='string'&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(pic)){
+    avatar.textContent='';
+    const image=document.createElement('img');
+    image.src=pic;image.alt='Foto de perfil';image.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%';
+    avatar.appendChild(image);
+  }else avatar.textContent=(CURRENT_USER.codename||CURRENT_USER.name||'?').slice(0,2).toUpperCase();
   document.getElementById('sb-name').textContent = CURRENT_USER.codename||CURRENT_USER.name;
-  document.getElementById('sb-role').textContent = window.MafiaOrg?.TITLES?.[CURRENT_USER.orgRole]||ROLES[CURRENT_USER.role]?.label||'INTEGRANTE';
+  document.getElementById('sb-role').textContent = CURRENT_USER.permissions?.isSystemAdmin?'ADMIN PRINCIPAL':CURRENT_USER.permissions?.label||window.MafiaOrg?.TITLES?.[CURRENT_USER.orgRole]||ROLES[CURRENT_USER.role]?.label||'INTEGRANTE';
 }
 
 function navigate(view, params){
@@ -757,6 +767,17 @@ function tickClock(){
 function renderView(){
   const v = document.getElementById('view');
   if(CURRENT_USER&&!hasViewAccess(CURRENT_VIEW)){navigate('dashboard');return;}
+  if(CURRENT_VIEW==='perfil'&&window.MafiaProfile){
+    window.MafiaProfile.render({
+      currentUser:CURRENT_USER,isActive:()=>CURRENT_VIEW==='perfil',toast,
+      onUpdated:user=>{
+        CURRENT_USER=remoteUserProfile(user);
+        renderSidebar();
+        saveDB();
+      }
+    });
+    return;
+  }
   if(['hierarquia','roster','contribuicoes'].includes(CURRENT_VIEW)&&window.MafiaOrg){
     const orgPage=CURRENT_VIEW;
     window.MafiaOrg.render(orgPage,{currentUser:CURRENT_USER,navigate,openModal,closeModal,toast,isActive:()=>CURRENT_VIEW===orgPage},CURRENT_PARAMS);
@@ -766,7 +787,16 @@ function renderView(){
     v.innerHTML=renderLocalCleanup();wireLocalCleanup();return;
   }
   if(CURRENT_VIEW==='admin'&&REMOTE_AUTH&&window.MafiaCloud){
-    window.MafiaCloud.renderAdmin({currentUser:CURRENT_USER,navigate,openModal,closeModal,toast,isActive:()=>CURRENT_VIEW==='admin'});
+    window.MafiaCloud.renderAdmin({
+      currentUser:CURRENT_USER,navigate,openModal,closeModal,toast,
+      isActive:()=>CURRENT_VIEW==='admin',
+      onOwnRoleChanged:async()=>{
+        const result=await window.MafiaCloud.me();
+        CURRENT_USER=remoteUserProfile(result.user);
+        renderSidebar();
+        await saveDB();
+      }
+    });
     return;
   }
   if(CURRENT_VIEW==='admin'&&window.MafiaAdmin){
@@ -2313,7 +2343,8 @@ function prepareLogin(){
 function remoteUserProfile(profile){
   const account={
     id:profile.id,username:profile.codename,codename:profile.codename,
-    name:profile.name,role:profile.role,orgRole:profile.orgRole||'membro',permissions:profile.permissions||null,status:'ONLINE',
+    name:profile.name,role:profile.role,orgRole:profile.orgRole||'membro',permissions:profile.permissions||null,
+    avatarData:profile.avatarData||null,isSystemAdmin:!!profile.isSystemAdmin,status:'ONLINE',
     lastAccess:profile.lastAccess||nowIso(),remoteAccount:true
   };
   const current=DB.users.find(x=>x.id===account.id);

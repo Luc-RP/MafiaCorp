@@ -23,8 +23,10 @@ export function database(){
       connectionString:url.toString(),
       ssl:{ca,rejectUnauthorized:true,servername:url.hostname},
       max:1,
-      idleTimeoutMillis:10000,
-      connectionTimeoutMillis:6500,
+      idleTimeoutMillis:1000,
+      maxLifetimeSeconds:15,
+      allowExitOnIdle:true,
+      connectionTimeoutMillis:4500,
       statement_timeout:10000,
       query_timeout:12000
     });

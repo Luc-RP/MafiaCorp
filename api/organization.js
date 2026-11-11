@@ -21,7 +21,7 @@ function dateArg(raw){
 async function overview(actor,date){
  const db=database(),access=permissionsFor(actor);
  const client=await db.connect();
- let members,progress,entries,panel,activity,roles;
+ let members,progress,entries,panel,activity,roles,reviewQueue={rows:[]};
  try{
  [members,progress,entries,panel,activity,roles]=[
   await client.query("SELECT a.id,a.name,a.codename,a.org_role,a.is_active,a.avatar_data,r.label AS role_label FROM public.mc_accounts a LEFT JOIN public.mc_org_roles r ON r.code=a.org_role WHERE a.org_role<>'admin_sistema' ORDER BY CASE WHEN a.org_role LIKE 'lider_%' THEN 1 WHEN a.org_role='gerente_geral' THEN 2 ELSE 3 END,a.codename LIMIT 500"),
@@ -31,6 +31,9 @@ async function overview(actor,date){
   await client.query("SELECT account_id FROM public.mc_daily_activity WHERE activity_date=$1",[date]),
   await client.query("SELECT code,label,section,summary,access_percent,is_builtin FROM public.mc_org_roles ORDER BY access_percent DESC,label")
  ];
+ if(access.canReview){
+   reviewQueue=await client.query("SELECT c.id,c.account_id,a.codename,to_char(c.activity_date,'YYYY-MM-DD') AS day,c.mission_type,c.points,c.note,c.created_at,(c.evidence_data IS NOT NULL) AS has_evidence FROM public.mc_contributions c JOIN public.mc_accounts a ON a.id=c.account_id WHERE c.status='pendente' AND c.account_id<>$1 ORDER BY c.activity_date DESC,c.created_at DESC LIMIT 100",[actor.id]);
+ }
  }finally{await client.release();}
  const approved=progress.rows.reduce((sum,row)=>sum+Number(row.approved||0),0);
  const own=progress.rows.find(x=>x.account_id===actor.id);
@@ -48,7 +51,9 @@ async function overview(actor,date){
    members:membersOut,contributions:entries.rows.map(x=>({
     id:x.id,accountId:x.account_id,codename:x.codename,missionType:x.mission_type,
     points:x.points,note:x.note,status:x.status,createdAt:x.created_at,reviewedAt:x.reviewed_at,hasEvidence:x.has_evidence
-   })),panel:panel.rows[0]||null,permissions:access,
+   })),reviewQueue:reviewQueue.rows.map(x=>({id:x.id,accountId:x.account_id,codename:x.codename,day:x.day,
+      missionType:x.mission_type,points:x.points,note:x.note,createdAt:x.created_at,hasEvidence:x.has_evidence})),
+   panel:panel.rows[0]||null,permissions:access,
    roles:Object.fromEntries(roles.rows.map(r=>[r.code,{label:r.label,section:r.section,summary:r.summary,access:r.access_percent,builtin:r.is_builtin}]))};
 }
 export default async function handler(req,res){

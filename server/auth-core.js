@@ -1,5 +1,5 @@
 // MafiaCorp • PostgreSQL authentication core (server only)
-import { Pool } from 'pg';
+import { Client } from 'pg';
 import { randomBytes, createHash, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { permissionsFor } from './org-roles.js';
@@ -7,32 +7,48 @@ import { permissionsFor } from './org-roles.js';
 const scrypt=promisify(scryptCallback);
 const SESSION_COOKIE='__Host-mc_session';
 const TTL=7*24*60*60;
-let pool;
+let cachedOptions;
 
 export function configured(){return Boolean(process.env.DATABASE_URL && process.env.AIVEN_CA_CERT);}
 
-export function database(){
+function connectionOptions(){
   if(!configured())throw new Error('DATABASE_NOT_CONFIGURED');
-  if(!pool){
+  if(!cachedOptions){
     const url=new URL(process.env.DATABASE_URL);
     if(!['postgres:','postgresql:'].includes(url.protocol))throw new Error('INVALID_DATABASE_URL');
     ['sslmode','sslcert','sslkey','sslrootcert','uselibpqcompat'].forEach(k=>url.searchParams.delete(k));
     const ca=process.env.AIVEN_CA_CERT.replace(/\\n/g,'\n');
     if(!ca.includes('-----BEGIN CERTIFICATE-----'))throw new Error('INVALID_CA_CERT');
-    pool=new Pool({
+    cachedOptions={
       connectionString:url.toString(),
       ssl:{ca,rejectUnauthorized:true,servername:url.hostname},
-      max:1,
-      idleTimeoutMillis:1000,
-      maxLifetimeSeconds:15,
-      allowExitOnIdle:true,
-      connectionTimeoutMillis:4500,
+      connectionTimeoutMillis:8000,
       statement_timeout:10000,
-      query_timeout:12000
-    });
-    pool.on('error',()=>{}); // The next query reports failures without exposing credentials.
+      query_timeout:12000,
+      keepAlive:false
+    };
   }
-  return pool;
+  return cachedOptions;
+}
+
+// Serverless: cada consulta encerra explicitamente a conexão antes da resposta.
+// Pg.Pool deixava conexões ociosas em instâncias congeladas do Vercel (erro 53300).
+export function database(){
+  const options=connectionOptions();
+  return {
+    query:async(...args)=>{
+      const client=new Client(options);
+      await client.connect();
+      try{return await client.query(...args);}
+      finally{await client.end().catch(()=>{});}
+    },
+    connect:async()=>{
+      const client=new Client(options);
+      await client.connect();
+      client.release=()=>client.end();
+      return client;
+    }
+  };
 }
 
 export function respond(res,status,body){

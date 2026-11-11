@@ -16,8 +16,13 @@ export default async function handler(req,res){
   if(!actor)return respond(res,401,{error:'UNAUTHENTICATED'});
   if(actor.role!=='admin'||!permission(actor,'canManageAccounts'))return respond(res,403,{error:'FORBIDDEN'});
   if(req.method==='GET'){
-   const result=await db.query(`SELECT id,name,codename,role,org_role,is_active,created_at,last_login_at,
-     password_revision FROM public.mc_accounts ORDER BY created_at ASC LIMIT 1000`);
+   const result=await db.query(`SELECT a.id,a.name,a.codename,a.role,a.org_role,a.is_active,a.is_system_admin,
+     a.avatar_data,a.created_at,a.last_login_at,a.password_revision,
+     r.code AS role_code,r.label AS role_label,r.section AS role_section,
+     r.summary AS role_summary,r.access_percent AS role_access,r.allowed_views AS role_views,
+     r.can_view_all AS role_can_view_all,r.can_review AS role_can_review,r.can_manage_panel AS role_can_manage_panel
+     FROM public.mc_accounts a LEFT JOIN public.mc_org_roles r ON r.code=a.org_role
+     ORDER BY a.created_at ASC LIMIT 1000`);
    return respond(res,200,{users:result.rows.map(profile)});
   }
   await rateLimit(req,'admin_mutation',120);
@@ -25,7 +30,10 @@ export default async function handler(req,res){
   if(req.method==='POST'){
    const name=String(body.name||'').trim(),codename=String(body.codename||'').trim();
    if(name.length<2||name.length>120||!CODENAME.test(codename)||!passwordPolicy(body.password,codename))return respond(res,400,{error:'INVALID_PROFILE_OR_PASSWORD'});
-   const orgRole=Object.prototype.hasOwnProperty.call(ROLE_DEFS,body.orgRole)&&body.orgRole!=='admin_sistema'?body.orgRole:'membro';
+   const orgRole=String(body.orgRole||'membro');
+   if(orgRole==='admin_sistema')return respond(res,403,{error:'FORBIDDEN'});
+   const roleFound=await db.query('SELECT code FROM public.mc_org_roles WHERE code=$1',[orgRole]);
+   if(!roleFound.rows.length)return respond(res,400,{error:'ROLE_NOT_FOUND'});
    const role=platformRoleFor(orgRole);
    const hash=await hashPassword(body.password);
    const result=await db.query(`INSERT INTO public.mc_accounts(name,codename,password_hash,role,org_role)
@@ -35,15 +43,16 @@ export default async function handler(req,res){
   }
   const id=String(body.id||body.accountId||'');
   if(!UUID.test(id))return respond(res,400,{error:'INVALID_ACCOUNT_ID'});
-  if(id===actor.id)return respond(res,403,{error:'CANNOT_MODIFY_OWN_ACCOUNT'});
+  const isSelf=id===actor.id;
+  if(isSelf && !(req.method==='PATCH'&&body.action==='orgRole'&&actor.is_system_admin))return respond(res,403,{error:'CANNOT_MODIFY_OWN_ACCOUNT'});
   const client=await db.connect();
   try{
    await client.query('BEGIN');
-   const found=await client.query('SELECT id,codename,role,org_role,is_active FROM public.mc_accounts WHERE id=$1 FOR UPDATE',[id]);
+   const found=await client.query('SELECT id,codename,role,org_role,is_active,is_system_admin FROM public.mc_accounts WHERE id=$1 FOR UPDATE',[id]);
    if(!found.rows.length){await client.query('ROLLBACK');return respond(res,404,{error:'ACCOUNT_NOT_FOUND'});}
    const target=found.rows[0];
-   if(target.org_role==='admin_sistema'){await client.query('ROLLBACK');return respond(res,403,{error:'SYSTEM_ADMIN_PROTECTED'});}
-   if(target.role==='admin'){
+   if(target.is_system_admin && !isSelf){await client.query('ROLLBACK');return respond(res,403,{error:'SYSTEM_ADMIN_PROTECTED'});}
+   if(target.role==='admin'&&!(isSelf&&target.is_system_admin&&body.action==='orgRole')){
     const count=await client.query("SELECT count(*)::int AS n FROM public.mc_accounts WHERE role='admin' AND is_active=true");
     if(count.rows[0].n<=1){await client.query('ROLLBACK');return respond(res,409,{error:'LAST_ADMIN_PROTECTED'});}
    }
@@ -67,10 +76,14 @@ export default async function handler(req,res){
        await client.query('UPDATE public.mc_accounts SET password_hash=$2,password_revision=password_revision+1,updated_at=now(),failed_signins=0,locked_until=NULL WHERE id=$1',[id,hash]);
        await client.query('UPDATE public.mc_sessions SET revoked_at=now() WHERE account_id=$1 AND revoked_at IS NULL',[id]);
        event='ADMIN_RESET_PASSWORD';
-     }else if(op==='orgRole'&&body.orgRole!=='admin_sistema'&&Object.prototype.hasOwnProperty.call(ROLE_DEFS,body.orgRole)){
-       const newRole=String(body.orgRole);
-       await client.query('UPDATE public.mc_accounts SET role=$2,org_role=$3,updated_at=now() WHERE id=$1',[id,platformRoleFor(newRole),newRole]);
-       await client.query('UPDATE public.mc_sessions SET revoked_at=now() WHERE account_id=$1 AND revoked_at IS NULL',[id]);
+     }else if(op==='orgRole'&&typeof body.orgRole==='string'&&body.orgRole!=='admin_sistema'){
+       const newRole=body.orgRole.trim();
+       const roleExists=await client.query('SELECT code FROM public.mc_org_roles WHERE code=$1',[newRole]);
+       if(!roleExists.rows.length){await client.query('ROLLBACK');return respond(res,400,{error:'ROLE_NOT_FOUND'});}
+       await client.query('UPDATE public.mc_accounts SET role=$2,org_role=$3,updated_at=now() WHERE id=$1',
+          [id,target.is_system_admin?'admin':platformRoleFor(newRole),newRole]);
+       await client.query('UPDATE public.mc_sessions SET revoked_at=now() WHERE account_id=$1 AND revoked_at IS NULL AND token_hash<>$2',
+          [id,isSelf?actor.token_hash:'']);
        event='ADMIN_CHANGED_ORG_ROLE';
      }else{
        await client.query('ROLLBACK');return respond(res,400,{error:'INVALID_ACTION'});

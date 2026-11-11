@@ -207,7 +207,8 @@ function dispatch(action,id){
  if(action==='delete')return remove(u);
 }
 async function refresh(){
- const [res,rolesRes]=await Promise.all([api(ADMIN),api('/api/roles')]);
+ const res=await api(ADMIN);
+ const rolesRes=await api('/api/roles');
  users=res.users||[];orgRoles=rolesRes.roles||[];roleCatalog=rolesRes.catalog||[];
  const root=document.getElementById('view');if(!root||(ctx.isActive&&!ctx.isActive()))return;
  root.innerHTML=adminHtml();wire();

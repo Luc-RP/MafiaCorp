@@ -55,6 +55,13 @@ input,select,textarea{font-family:inherit;}
 .eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--grey-400);}
 
 /* ---------- LOGIN ---------- */
+#auth-boot{position:fixed;inset:0;z-index:800;display:flex;align-items:center;justify-content:center;background:#050608;color:#ecf0f5;text-align:center;padding:20px;}
+#auth-boot[hidden]{display:none;}
+.auth-boot-panel{max-width:410px;width:100%;padding:34px 24px;border:1px solid #414b56;background:#12171d;box-shadow:0 14px 50px #0009;}
+.auth-boot-panel strong{display:block;font:600 20px Georgia,serif;letter-spacing:.12em;margin-bottom:14px;}
+.auth-boot-panel p{font:11px/1.8 var(--font-mono,monospace);color:#aebdca;margin:0 0 15px;}
+#auth-boot-retry{padding:10px 20px;border:1px solid #96a6b8;background:#26313d;color:#f3f5f8;cursor:pointer;font:11px var(--font-mono,monospace);}
+#auth-boot-retry[hidden]{display:none;}
 #login-screen{
   position:fixed;inset:0;background:var(--black);
   display:flex;align-items:center;justify-content:center;
@@ -411,7 +418,8 @@ tbody tr:last-child td{border-bottom:none;}
 </head>
 <body>
 
-<div id="login-screen">
+<div id="auth-boot" role="status" aria-live="polite"><div class="auth-boot-panel"><strong>MAFIACORP</strong><p id="auth-boot-message">Verificando sua sessão com segurança...</p><button id="auth-boot-retry" type="button" hidden>Tentar reconectar</button></div></div>
+<div id="login-screen" style="display:none">
   <div class="login-grid"></div>
   <div class="login-scan"></div>
   <div class="login-box">
@@ -600,6 +608,7 @@ function restoredView(){
   }catch(err){return null;}
 }
 function showSignedIn(user,restore){
+  const boot=document.getElementById('auth-boot');if(boot)boot.hidden=true;
   CURRENT_USER=user;
   user.status='ONLINE';
   document.getElementById('login-screen').style.display='none';
@@ -2396,18 +2405,23 @@ function remoteUserProfile(profile){
   else DB.users.push(account);
   return account;
 }
+let AUTH_CHECK_RUNNING=false;
+function showAuthBoot(message,retry){
+  const boot=document.getElementById('auth-boot');
+  if(!boot)return;
+  boot.hidden=false;
+  document.getElementById('auth-boot-message').textContent=message;
+  document.getElementById('auth-boot-retry').hidden=!retry;
+  document.getElementById('login-screen').style.display='none';
+}
 function remoteUnavailable(){
   REMOTE_UNAVAILABLE=true;
-  document.getElementById('login-form').hidden=true;
-  document.getElementById('cloud-register-form').hidden=true;
-  document.getElementById('cloud-auth-tabs').hidden=true;
-  const msg=document.getElementById('login-error');
-  msg.textContent='O servidor de autenticação está indisponível. Seus dados locais foram preservados.';
-  msg.style.display='block';
-  const tag=document.querySelector('.login-restricted');
-  if(tag)tag.textContent='CONEXÃO CENTRAL INDISPONÍVEL';
+  // Falha 503/rede NÃO é expiração de sessão. Preservar cookie e oferecer reconexão.
+  showAuthBoot('Conexão temporariamente indisponível. Sua sessão foi preservada. Tente reconectar.',true);
 }
 function showRemoteLoginMode(register){
+  const boot=document.getElementById('auth-boot');if(boot)boot.hidden=true;
+  document.getElementById('login-screen').style.display='flex';
   const tabs=document.getElementById('cloud-auth-tabs');
   tabs.hidden=false;
   document.getElementById('login-form').hidden=register;
@@ -2417,23 +2431,40 @@ function showRemoteLoginMode(register){
   document.getElementById('login-error').style.display='none';
 }
 async function initializeCentralAuth(){
-  // Centralização ativada: falhar de modo fechado; não oferecer login local alternativo.
+  // O cookie HttpOnly é a única fonte de sessão; não confiar em localStorage.
+  // Evitar health-check: um 503 transitório não deve expulsar o usuário ao pressionar F5.
+  if(AUTH_CHECK_RUNNING)return true;
+  AUTH_CHECK_RUNNING=true;
   REMOTE_AUTH=true;
-  if(!window.MafiaCloud){remoteUnavailable();return true;}
-  let state=null;
-  try{state=await window.MafiaCloud.status();}
-  catch(err){remoteUnavailable();return true;}
-  if(state.mode!=='remote'||!state.online){remoteUnavailable();return true;}
-  try{localStorage.setItem(REMOTE_AUTH_MARKER,'1');}catch(err){}
-  prepareLogin();
+  REMOTE_UNAVAILABLE=false;
+  showAuthBoot('Verificando sua sessão com segurança...',false);
   try{
-    const current=await window.MafiaCloud.me();
-    if(current&&current.user){showSignedIn(remoteUserProfile(current.user),true);return true;}
-  }catch(err){
-    if(err.status!==401){remoteUnavailable();return true;}
-  }
-  showRemoteLoginMode(false);
-  return true;
+    if(!window.MafiaCloud){remoteUnavailable();return true;}
+    for(let attempt=0;attempt<3;attempt++){
+      try{
+        const current=await window.MafiaCloud.me();
+        if(current&&current.user){
+          try{localStorage.setItem(REMOTE_AUTH_MARKER,'1');}catch(err){}
+          showSignedIn(remoteUserProfile(current.user),true);
+          return true;
+        }
+        // Resposta inesperada não é um 401: não expor login.
+      }catch(err){
+        if(err.status===401){
+          // Só a falta/expiração real da sessão autoriza mostrar login.
+          prepareLogin();
+          showRemoteLoginMode(false);
+          return true;
+        }
+      }
+      if(attempt<2){
+        showAuthBoot('Reconectando ao servidor de contas... ('+(attempt+2)+'/3)',false);
+        await new Promise(resolve=>setTimeout(resolve,attempt===0?500:1200));
+      }
+    }
+    remoteUnavailable();
+    return true;
+  }finally{AUTH_CHECK_RUNNING=false;}
 }
 async function handleRemoteRegistration(ev){
   ev.preventDefault();
@@ -2544,6 +2575,7 @@ async function handleLogout(){
 
 /* ============ GLOBAL WIRES ============ */
 function wireGlobal(){
+  document.getElementById('auth-boot-retry').addEventListener('click',()=>{initializeCentralAuth().catch(()=>remoteUnavailable());});
   document.getElementById('login-form').addEventListener('submit', handleLogin);
   document.getElementById('btn-logout').addEventListener('click', handleLogout);
   document.getElementById('cloud-register-form').addEventListener('submit',handleRemoteRegistration);
@@ -2624,7 +2656,7 @@ async function init(){
   if(sessionUser){showSignedIn(sessionUser,true);return;}
   prepareLogin();
 }
-init();
+init().catch(err=>{console.error('MafiaCorp bootstrap error',err?.name||'unknown');remoteUnavailable();});
 
 })();
 </script>

@@ -16,7 +16,7 @@ function validate(body,code){
  const views=Array.from(new Set(['perfil','dashboard','hierarquia','roster','contribuicoes',...body.views]));
  if(views.some(x=>typeof x!=='string'||!ASSIGNABLE_VIEWS.includes(x)))throw Object.assign(new Error('INVALID_VIEWS'),{status:400});
  return {code,label,section,summary,access,views,viewAll:body.canViewAll===true,
-   review:body.canReview===true,panel:body.canManagePanel===true,submit:body.canSubmit!==false};
+   review:false,panel:body.canManagePanel===true,submit:body.canSubmit!==false};
 }
 export default async function handler(req,res){
  if(!configured())return respond(res,503,{error:'AUTH_NOT_CONFIGURED'});

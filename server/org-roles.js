@@ -58,7 +58,7 @@ export function permissionsFor(user){
    canManagePanel:systemAdmin||isLeader||role==='gerente_geral'||Boolean(custom&&user.role_can_manage_panel),
    canAssignRoles:isStaff,
    canManageAccounts:isStaff,
-   canSubmit:role!=='admin_sistema'};
+   canSubmit:role!=='admin_sistema'&&(!custom||user.role_can_submit!==false)};
 }
 export function permission(user,key){return Boolean(permissionsFor(user)[key]);}
 export function businessDate(){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}

@@ -174,7 +174,8 @@ function contributionRows(){
 function contributionHtml(){
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
  const isToday=payload.date===today;
- return '<div class="org-controls"><label>Dia consultado <input id="org-date" type="date" value="'+e(payload.date)+'" max="'+e(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()))+'"></label>'+
+ return (payload.permissions.canReview?'<div class="org-review-note">✦ Conferência habilitada: Lideranças 01, 02, 03, Gerente Geral e Gerente de Farm. A aprovação das próprias entregas permanece bloqueada.</div>':'')+
+ '<div class="org-controls"><label>Dia consultado <input id="org-date" type="date" value="'+e(payload.date)+'" max="'+e(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()))+'"></label>'+
  (payload.permissions.canSubmit?'<button class="org-btn" id="org-my-activity" '+(!isToday||payload.ownActive?'disabled':'')+'>'+(isToday?(payload.ownActive?'Atividade registrada':'Marcar que estive ativo hoje'):'Somente consulta histórica')+'</button>':'')+
  (payload.permissions.canViewAll?'<label>Integrante<select id="org-member-filter"><option value="">Todos</option>'+payload.members.map(m=>'<option value="'+e(m.id)+'" '+(selectedMember===m.id?'selected':'')+'>'+e(m.codename)+'</option>').join('')+'</select></label>':'')+'</div>'+
  overall()+'<div class="org-columns">'+(isToday&&payload.permissions.canSubmit?submitHtml():'<section class="org-panel"><div class="org-panel-top"><h2>Histórico de entregas</h2></div><div class="org-inner">Entregas e marcações de atividade são registradas somente no dia atual. Esta data está em modo de consulta.</div></section>')+missionsHtml()+'</div>'+contributionRows()+

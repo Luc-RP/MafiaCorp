@@ -24,6 +24,7 @@ const texts={
   SYSTEM_ADMIN_PROTECTED:'A conta administrativa principal é protegida.',
   ROLE_NOT_FOUND:'Cargo não encontrado.',
   ROLE_IN_USE:'Este cargo possui integrantes vinculados. Reatribua-os antes de excluir.',
+  ROLE_CODE_IN_USE:'Já existe um cargo com esse código. Escolha outro.',
   BUILTIN_ROLE_LOCKED:'Os cargos originais não podem ser excluídos ou renomeados.',
   INVALID_ROLE:'Confira o nome, setor e porcentagem do cargo.',
   INVALID_VIEWS:'Seleção de seções inválida.'

@@ -1,5 +1,15 @@
 # MafiaCorp | Central da Família (FiveM / GTA RP)
 
+## Ajuste de autonomia da Liderança (11/11/2026)
+
+Por decisão expressa do responsável, **Liderança 01, 02 e 03** possuem autonomia total de conferência de metas, inclusive **aprovação ou rejeição das próprias entregas**. A conta Administrador do Sistema também pode conferir as próprias entregas, quando existentes. Gerente Geral e Gerente de Farm continuam podendo aprovar entregas de outros integrantes, mas não as próprias. Os demais cargos não recebem o poder de aprovação.
+
+- `server/org-roles.js`: permissão adicional `canSelfReview` restrita a três Lideranças e administrador principal.
+- `api/organization.js`: consulta de pendências e atualização transacional autorizam entrega do próprio aprovador apenas se `canSelfReview=true`. Mantêm validação do cargo, do status pendente, identificação de `reviewed_by`, data e evento `mission_approved`/`mission_rejected` na fila auditável.
+- `mafia-org.js`: exibe os botões Aprovar/Rejeitar também nas próprias entregas desses cargos, inclusive nos dias anteriores. Gerentes veem a orientação de solicitação a outro responsável para suas entregas.
+- Confirmação em banco somente leitura: Coringa está ativo como `lider_01` com papel técnico `admin` e três contribuições ainda pendentes. **Não houve aprovação automática.**
+- Testes simulados de backend cobriram self review de Líder 01/02/03, admin principal, bloqueio para gerente geral/farm, gerente farm aprovando terceiros e membro sem permissão. Teste de UI confirmou botões da Liderança. Necessário validar com sessão real do Coringa após publicação.
+
 ## Gate 007: F5 e conferência de metas (11/11/2026)
 
 **Diagnóstico do banco:** apenas duas contas ativas, Luc (`admin_sistema`) e Coringa (`lider_01`), com sessões válidas. As três contribuições pendentes pertencem ao Coringa. Portanto, Coringa não pode aprovar essas entregas por serem suas, independentemente da Liderança; Luc pode conferi-las. Não houve mudança automática no status das contribuições.

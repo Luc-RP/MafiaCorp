@@ -43,9 +43,14 @@ export default async function handler(req,res){
      await rateLimit(req,'login',18);
      const body=jsonBody(req),codename=String(body.codename||'').trim(),password=String(body.password||'');
      if(!CODENAME.test(codename)||password.length>128||!password)return respond(res,401,{error:'INVALID_CREDENTIALS'});
-     const db=database(),result=await db.query(`SELECT id,name,codename,role,org_role,is_active,
-       password_hash,password_revision,failed_signins,locked_until,created_at,last_login_at
-       FROM public.mc_accounts WHERE codename_normalized=lower(btrim($1)) LIMIT 1`,[codename]);
+     const db=database(),result=await db.query(`SELECT a.id,a.name,a.codename,a.role,a.org_role,a.is_system_admin,a.avatar_data,
+       a.is_active,a.password_hash,a.password_revision,a.failed_signins,a.locked_until,
+       a.created_at,a.last_login_at,r.code AS role_code,r.label AS role_label,
+       r.section AS role_section,r.summary AS role_summary,r.access_percent AS role_access,
+       r.allowed_views AS role_views,r.can_view_all AS role_can_view_all,
+       r.can_review AS role_can_review,r.can_manage_panel AS role_can_manage_panel
+       FROM public.mc_accounts a LEFT JOIN public.mc_org_roles r ON r.code=a.org_role
+       WHERE a.codename_normalized=lower(btrim($1)) LIMIT 1`,[codename]);
      const account=result.rows[0];
      if(account?.locked_until && new Date(account.locked_until)>new Date())return respond(res,429,{error:'TRY_LATER'});
      if(!account||!await checkPassword(password,account.password_hash)){

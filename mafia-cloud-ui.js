@@ -50,7 +50,7 @@ let orgRoles=[],roleCatalog=[];
 function currentRoles(){return orgRoles.length?orgRoles:Object.entries(ORG_ROLE).map(([code,label])=>({code,label,accessPercent:ORG_ACCESS[code],builtin:true}));}
 function roleName(code){return currentRoles().find(r=>r.code===code)?.label||ORG_ROLE[code]||code||'Integrante';}
 function rolePercent(code){return currentRoles().find(r=>r.code===code)?.accessPercent??ORG_ACCESS[code]??25;}
-function roleOptions(selected){return currentRoles().filter(r=>r.code!=='admin_sistema').map(r=>'<option value="'+esc(r.code)+'" '+(selected===r.code?'selected':'')+'>'+esc(r.label)+' · '+Number(r.accessPercent)+'% acesso</option>').join('');}
+function roleOptions(selected,allowSystemAdmin=false){return currentRoles().filter(r=>allowSystemAdmin||r.code!=='admin_sistema').map(r=>'<option value="'+esc(r.code)+'" '+(selected===r.code?'selected':'')+'>'+esc(r.label)+' · '+Number(r.accessPercent)+'% acesso</option>').join('');}
 
 let ctx=null,users=[],search='',filter='all';
 function adminHtml(){
@@ -172,7 +172,7 @@ function reset(u){
 function changeOrgRole(u){
  formModal('Atribuir cargo: '+u.codename,
   '<p class="am-inline-warning">As permissões passam a valer no servidor imediatamente. Se alterar seu próprio cargo, sua administração principal será preservada.</p>'+
-  '<label>Cargo oficial<select name="orgRole">'+roleOptions(u.orgRole||'membro')+'</select></label>',
+  '<label>Cargo oficial<select name="orgRole">'+roleOptions(u.orgRole||'membro',u.isSystemAdmin&&u.id===ctx.currentUser.id)+'</select></label>',
   async data=>{
     await api(ADMIN,'PATCH',{id:u.id,action:'orgRole',orgRole:String(data.get('orgRole'))});
     if(u.id===ctx.currentUser.id&&ctx.onOwnRoleChanged)await ctx.onOwnRoleChanged();

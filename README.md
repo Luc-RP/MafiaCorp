@@ -1,5 +1,17 @@
 # MafiaCorp | Central da Família (FiveM / GTA RP)
 
+## Gate 006: Aprovação de metas, desempenho até 2030 e fila Discord (10/11/2026)
+
+**Cargos autorizados a aprovar contribuições RP:** Liderança 01, 02, 03, Gerente Geral e Gerente de Farm. O Administrador do Sistema também conserva aprovação. Outros cargos, inclusive Gerente de Ação, Elite, Membros e cargos personalizados, não aprovam. O backend impede aprovação da própria contribuição.
+
+**Calendário e métricas:** a rota autenticada `GET /api/performance?accountId=<uuid>&year=2026` retorna histórico diário entre `2026-11-01` e `2030-12-31`, somente do integrante ou de integrantes visíveis a cargos autorizados. A tela `Desempenho` é acessível ao clicar no codinome no cadastro de integrantes e nas entregas. Exibe calendário mensal (até dezembro de 2030), barras diárias, semanais e mensais, dias ativos, metas de 20% atingidas e média diária. Dias sem atividade registrada não são contados como falha ou queda. Datas futuras não recebem dados fictícios.
+
+**Validação existente:** consulta SQL de histórico real confirmou Coringa (Liderança 01) com uma entrega de Aeronave de 10% pendente em 10/11/2026, sem modificar o registro. Testes simulados de permissões cobriram os cinco cargos, cargos não autorizados e proibição de autoaprovação. Testes de renderização confirmaram calendário, anos até 2030 e gráficos. Testes reais de aprovação entre sessões distintas ainda são necessários.
+
+**Preparação Discord, não integração ativa:** `database/006_discord_outbox.sql` adiciona `mc_event_outbox`; `server/event-outbox.js` grava eventos dentro da transação de entrega/aprovação/atividade/fechamento do painel. O evento contém só identificadores de contas, tipo de missão, data, pontuação e situação, nunca o print, senha ou token. Não há webhook, bot, cron ou notificação para Discord neste gate. Um futuro emissor precisará autenticação de servidor, idempotência, tentativas/reentrega e controles de privacidade, após autorização dos canais.
+
+**Arquivos:** `api/performance.js`, `mafia-performance.js`, `mafia-performance.css`, `server/org-roles.js`, `api/organization.js`, `server/event-outbox.js`, `database/006_discord_outbox.sql`, atualizações em `index.html`, `mafia-org.js`, `mafia-cloud-ui.js` e estilos.
+
 ## Gate 005: administracao, cargos dinamicos e perfil (10/11/2026)
 
 - Conta Luc marcada como administradora permanente pelo campo is_system_admin; pode escolher um cargo RP ou retornar a admin_sistema sem perder privilegios.

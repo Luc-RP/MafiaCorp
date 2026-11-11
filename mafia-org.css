@@ -109,3 +109,9 @@
 .org-graph-legend{border-top:1px solid #3c4652;padding:12px 18px}
 .org-avatar{overflow:hidden}.org-avatar img{height:100%;width:100%;object-fit:cover}
 @media(max-width:760px){.org-network-head{align-items:flex-start;flex-direction:column}.org-graph-scroll svg{width:760px}.org-network{margin-top:17px}}
+
+.org-member-name,.org-log-member{border:0;padding:0;background:transparent;color:#dce6f0;cursor:pointer;text-decoration:underline;text-decoration-color:#74899f;text-underline-offset:3px;font:inherit}
+.org-member-name:hover,.org-log-member:hover{color:#fff;text-decoration-color:#ecf3f8}
+.org-member-name:focus-visible,.org-log-member:focus-visible{outline:2px solid #e7eff8;outline-offset:3px}
+.org-member-foot{justify-content:flex-start}
+.org-review-note{margin:0 0 14px;padding:11px 14px;border:1px solid #688079;background:#172923;color:#c6e5d3;font:10px/1.7 var(--font-mono,monospace)}

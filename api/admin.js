@@ -20,7 +20,8 @@ export default async function handler(req,res){
      a.avatar_data,a.created_at,a.last_login_at,a.password_revision,
      r.code AS role_code,r.label AS role_label,r.section AS role_section,
      r.summary AS role_summary,r.access_percent AS role_access,r.allowed_views AS role_views,
-     r.can_view_all AS role_can_view_all,r.can_review AS role_can_review,r.can_manage_panel AS role_can_manage_panel
+     r.can_view_all AS role_can_view_all,r.can_review AS role_can_review,
+     r.can_manage_panel AS role_can_manage_panel,r.can_submit AS role_can_submit
      FROM public.mc_accounts a LEFT JOIN public.mc_org_roles r ON r.code=a.org_role
      ORDER BY a.created_at ASC LIMIT 1000`);
    return respond(res,200,{users:result.rows.map(profile)});

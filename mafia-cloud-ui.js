@@ -20,7 +20,8 @@ const texts={
   LAST_ADMIN_PROTECTED:'O último administrador ativo está protegido.',
   CANNOT_MODIFY_OWN_ACCOUNT:'Você não pode modificar o próprio acesso nesta tela.',
   ROLE_OCCUPIED:'Este cargo de comando já está ocupado. Escolha outro posto ou altere o responsável atual.',
-  ACCOUNT_HAS_HISTORY:'Este integrante possui histórico de missões. Bloqueie a conta para preservar os comprovantes; a exclusão definitiva ficará para a política de retenção.'
+  ACCOUNT_HAS_HISTORY:'Este integrante possui histórico de missões. Bloqueie a conta para preservar os comprovantes; a exclusão definitiva ficará para a política de retenção.',
+  SYSTEM_ADMIN_PROTECTED:'A conta administrativa principal é protegida.'
 };
 async function api(path,method='GET',body){
   const params={method,credentials:'same-origin',cache:'no-store',headers:{'Accept':'application/json'}};
@@ -37,9 +38,9 @@ function me(){return api(API+'?action=me');}
 function logout(){return api(API+'?action=logout','POST',{});}
 function safeDate(s){if(!s)return 'Nunca';const d=new Date(s);return Number.isNaN(d.getTime())?'—':d.toLocaleString('pt-BR');}
 const ROLE={admin:'Administrador',chefe:'Chefe',investigador:'Investigador',observador:'Observador'};
-const ORG_ROLE={lider_01:'Liderança 01',lider_02:'Liderança 02',lider_03:'Liderança 03',gerente_geral:'Gerente Geral',gerente_farm:'Gerente de Farm',gerente_acao:'Gerente de Ação',estrategista:'Estrategista / Inteligência',logistica:'Logística',elite:'Elite / Operadores',membro:'Membro / Integrante'};
-const ORG_ACCESS={lider_01:100,lider_02:100,lider_03:100,gerente_geral:90,gerente_farm:65,gerente_acao:65,estrategista:60,logistica:55,elite:40,membro:25};
-function roleOptions(selected){return Object.entries(ORG_ROLE).map(([key,value])=>'<option value="'+key+'" '+(selected===key?'selected':'')+'>'+esc(value)+' · '+ORG_ACCESS[key]+'% acesso</option>').join('');}
+const ORG_ROLE={admin_sistema:'Administrador do Sistema',lider_01:'Liderança 01',lider_02:'Liderança 02',lider_03:'Liderança 03',gerente_geral:'Gerente Geral',gerente_farm:'Gerente de Farm',gerente_acao:'Gerente de Ação',estrategista:'Estrategista / Inteligência',logistica:'Logística',elite:'Elite / Operadores',membro:'Membro / Integrante'};
+const ORG_ACCESS={admin_sistema:100,lider_01:100,lider_02:100,lider_03:100,gerente_geral:90,gerente_farm:65,gerente_acao:65,estrategista:60,logistica:55,elite:40,membro:25};
+function roleOptions(selected){return Object.entries(ORG_ROLE).filter(([key])=>key!=='admin_sistema').map(([key,value])=>'<option value="'+key+'" '+(selected===key?'selected':'')+'>'+esc(value)+' · '+ORG_ACCESS[key]+'% acesso</option>').join('');}
 
 let ctx=null,users=[],search='',filter='all';
 function adminHtml(){

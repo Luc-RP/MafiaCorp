@@ -77,7 +77,7 @@ export default async function handler(req,res){
        await client.query('UPDATE public.mc_accounts SET password_hash=$2,password_revision=password_revision+1,updated_at=now(),failed_signins=0,locked_until=NULL WHERE id=$1',[id,hash]);
        await client.query('UPDATE public.mc_sessions SET revoked_at=now() WHERE account_id=$1 AND revoked_at IS NULL',[id]);
        event='ADMIN_RESET_PASSWORD';
-     }else if(op==='orgRole'&&typeof body.orgRole==='string'&&body.orgRole!=='admin_sistema'){
+     }else if(op==='orgRole'&&typeof body.orgRole==='string'&&(body.orgRole!=='admin_sistema'||(isSelf&&target.is_system_admin))){
        const newRole=body.orgRole.trim();
        const roleExists=await client.query('SELECT code FROM public.mc_org_roles WHERE code=$1',[newRole]);
        if(!roleExists.rows.length){await client.query('ROLLBACK');return respond(res,400,{error:'ROLE_NOT_FOUND'});}

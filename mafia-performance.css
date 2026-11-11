@@ -1,0 +1,64 @@
+/* MafiaCorp: painel de desempenho e calendario 2026-2030 */
+.view:has(.perf-shell){padding:0;background:#080c10}
+.perf-shell{min-height:100%;background:radial-gradient(ellipse 85% 50% at 70% 0%,#26334039,transparent),#080b10;color:#e5ebf1;padding:24px 25px 50px;font:11px/1.65 var(--font-mono,monospace)}
+.perf-top{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid #374450;padding-bottom:15px;color:#9cacc0;letter-spacing:.11em}
+.perf-top button{border:1px solid #566575;padding:8px 10px;background:#1c2530;color:#d3deea;cursor:pointer}
+.perf-identity{display:flex;align-items:center;gap:18px;padding:24px 0}
+.perf-photo{width:72px;height:72px;border-radius:8px;border:1px solid #8296ac;overflow:hidden;background:#253443;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.perf-photo img{width:100%;height:100%;object-fit:cover}.perf-photo span{font:600 25px Georgia,serif}
+.perf-identity h1{font:500 30px/1.1 Georgia,serif;color:#f1f4f7;margin:6px 0}
+.perf-identity p,.perf-identity small{color:#a4b3c3;font:11px/1.5 var(--font-mono,monospace)}
+.perf-range{margin-left:auto;text-align:right;color:#99a9b9;font-size:9px;letter-spacing:.09em}
+.perf-range strong{font-size:11px;color:#d5dfec;white-space:nowrap}
+.perf-controls{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.perf-controls label{display:flex;flex-direction:column;gap:6px;color:#b3c1cf;min-width:130px}
+.perf-controls select{padding:9px 12px;min-width:130px;border:1px solid #5c6b7d;background:#141a22;color:#e6ecf3;font:12px var(--font-mono,monospace)}
+.perf-description{flex:1;color:#90a1b2;padding-bottom:5px;max-width:590px;min-width:200px}
+.perf-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-bottom:18px}
+.perf-stat{padding:14px;border:1px solid #43515f;background:linear-gradient(150deg,#242e38,#13191f);border-top:2px solid #99aabc}
+.perf-stat small,.perf-stat span{display:block;color:#a2b2c1;font:9px/1.5 var(--font-mono,monospace)}
+.perf-stat strong{display:block;color:#f0f4f8;font:500 26px Georgia,serif;margin:9px 0}
+.perf-layout{display:grid;grid-template-columns:minmax(325px,.78fr) minmax(430px,1.22fr);gap:14px;align-items:start}
+.perf-panel,.perf-graph{background:linear-gradient(150deg,#1b2530,#10161c);border:1px solid #49596a;margin-bottom:14px}
+.perf-panel-head{padding:14px 17px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid #374656}
+.perf-panel-head h3{font:500 18px Georgia,serif;color:#eef3f7;margin:0}
+.perf-panel-head small{font:10px var(--font-mono,monospace);color:#94a5b5}
+.perf-calendar-top{display:flex;justify-content:space-between;align-items:center;padding:15px 16px}
+.perf-calendar-top strong{font:500 17px Georgia,serif;color:#e7edf3}
+.perf-calendar-top button{border:1px solid #65768a;border-radius:2px;background:#222d39;color:#e7edf4;cursor:pointer;font-size:21px;min-width:35px;height:34px}
+.perf-calendar-top button:disabled{opacity:.3;cursor:not-allowed}
+.perf-weekdays,.perf-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:0 12px}
+.perf-weekdays span{padding:8px 0;text-align:center;color:#8b9caf;font:10px var(--font-mono,monospace)}
+.perf-calendar{padding-bottom:15px}
+.perf-empty{min-height:45px}
+.perf-day{min-width:0;min-height:49px;padding:6px 2px;background:#1e2731;border:1px solid #435260;border-radius:3px;color:#e3e9ef;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
+.perf-day b{font:600 12px Georgia,serif}.perf-day small{font:9px var(--font-mono,monospace);color:#b9c6d4}
+.perf-day.achieved{background:#1a382a;border-color:#497b60}
+.perf-day.below{background:#443022;border-color:#87654b}
+.perf-day.pending{background:#393322;border-color:#8f864d}
+.perf-day.unknown{background:#19222b;border-color:#3b4a59}
+.perf-day.disabled{opacity:.26;cursor:not-allowed}
+.perf-day.selected,.perf-day:focus-visible{outline:2px solid #e1ebf6;outline-offset:1px}
+.perf-legend{display:flex;flex-wrap:wrap;gap:9px;padding:9px 14px;color:#a0b0be}
+.perf-legend span{display:inline-flex;align-items:center;gap:5px;font:9px var(--font-mono,monospace)}
+.perf-legend i{height:10px;width:10px;display:inline-block;border:1px solid #647388}
+.perf-legend .achieved{background:#1a382a;border-color:#497b60}
+.perf-legend .below{background:#443022;border-color:#87654b}
+.perf-legend .pending{background:#393322;border-color:#8f864d}
+.perf-legend .unknown{background:#19222b}
+.perf-day-info{margin:13px;border:1px solid #4e5e70;background:#111920;padding:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.perf-day-info small{display:block;font:9px var(--font-mono,monospace);color:#94a7b9}
+.perf-day-info strong{display:block;font:500 15px Georgia,serif;color:#e4edf5}
+.perf-day-info button{border:1px solid #8193a7;background:#2e3b48;color:#f0f5f8;padding:9px 11px;cursor:pointer;font:10px var(--font-mono,monospace)}
+.perf-graph-stack{min-width:0}
+.perf-chart-scroll{overflow-x:auto;padding:9px}
+.perf-chart-scroll svg{width:100%;min-width:620px;display:block}
+.perf-chart-grid{stroke:#4b5a69;stroke-width:.8;opacity:.7}
+.perf-axis{fill:#a2b1c1;font:10px var(--font-mono,monospace)}
+.perf-bar{fill:#aebccc;stroke:#d6e3ed;stroke-width:.5}
+.perf-bar.dim{opacity:.24}
+.perf-note{color:#94a7ba;font:10px/1.8 var(--font-mono,monospace);margin-top:11px}
+.perf-error{padding:17px;color:#e4aab2;border:1px solid #644553}
+.perf-wait{color:#a8b9c9}
+@media(max-width:1200px){.perf-layout{grid-template-columns:1fr}.perf-chart-scroll svg{min-width:650px}.perf-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.perf-shell{padding:18px 11px}.perf-identity{flex-wrap:wrap}.perf-range{width:100%;text-align:left;margin:0}.perf-stats{gap:7px}.perf-stat{padding:11px}.perf-stat strong{font-size:21px}.perf-calendar{gap:3px;margin:0 7px}.perf-day{min-height:43px;padding:4px 1px}.perf-day-info{margin:8px}}

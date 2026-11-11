@@ -20,7 +20,7 @@ function dateArg(raw){
 async function overview(actor,date){
  const db=database(),access=permissionsFor(actor);
  const [members,progress,entries,panel,activity]=await Promise.all([
-  db.query("SELECT id,name,codename,org_role,is_active FROM public.mc_accounts ORDER BY CASE WHEN org_role LIKE 'lider_%' THEN 1 WHEN org_role='gerente_geral' THEN 2 ELSE 3 END,codename LIMIT 500"),
+  db.query("SELECT id,name,codename,org_role,is_active FROM public.mc_accounts WHERE org_role<>'admin_sistema' ORDER BY CASE WHEN org_role LIKE 'lider_%' THEN 1 WHEN org_role='gerente_geral' THEN 2 ELSE 3 END,codename LIMIT 500"),
   db.query("SELECT account_id,coalesce(sum(points) FILTER (WHERE status='aprovado'),0)::int AS approved,coalesce(sum(points) FILTER (WHERE status='pendente'),0)::int AS pending FROM public.mc_contributions WHERE activity_date=$1 GROUP BY account_id",[date]),
   db.query("SELECT c.id,c.account_id,a.codename,c.mission_type,c.points,c.note,c.status,c.created_at,c.reviewed_at,(c.evidence_data IS NOT NULL) AS has_evidence FROM public.mc_contributions c JOIN public.mc_accounts a ON a.id=c.account_id WHERE c.activity_date=$1 AND ($2::boolean OR c.account_id=$3) ORDER BY c.created_at DESC LIMIT 300",[date,access.canViewAll,actor.id]),
   db.query("SELECT production_choice,closed_at FROM public.mc_qg_panels WHERE activity_date=$1",[date]),
@@ -71,10 +71,12 @@ export default async function handler(req,res){
   const action=String(body.action||'');
   const today=businessDate();
   if(action==='activity'){
+    if(!access.canSubmit)return respond(res,403,{error:'ADMIN_EXEMPT'});
     await db.query("INSERT INTO public.mc_daily_activity(account_id,activity_date) VALUES($1,$2) ON CONFLICT DO NOTHING",[actor.id,today]);
     return respond(res,200,{ok:true,activeDate:today});
   }
   if(action==='submit'){
+    if(!access.canSubmit)return respond(res,403,{error:'ADMIN_EXEMPT'});
     const kind=String(body.missionType||'');
     if(!Object.prototype.hasOwnProperty.call(MISSION_POINTS,kind))return respond(res,400,{error:'INVALID_MISSION'});
     const note=String(body.note||'').trim();

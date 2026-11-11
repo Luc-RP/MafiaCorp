@@ -1,6 +1,7 @@
 /* MafiaCorp QG metas e contribuições: validação e autorização no PostgreSQL. */
 import {database,configured,respond,verifyOrigin,userFromRequest,rateLimit,serverError} from '../server/auth-core.js';
 import {ROLE_DEFS,MISSION_POINTS,MISSION_LABELS,permissionsFor,businessDate} from '../server/org-roles.js';
+import {inTransaction,recordEvent} from '../server/event-outbox.js';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DATE=/^\d{4}-\d{2}-\d{2}$/;
 function error(status,code){return Object.assign(new Error(code),{status});}
@@ -77,7 +78,10 @@ export default async function handler(req,res){
   const today=businessDate();
   if(action==='activity'){
     if(!access.canSubmit)return respond(res,403,{error:'ADMIN_EXEMPT'});
-    await db.query("INSERT INTO public.mc_daily_activity(account_id,activity_date) VALUES($1,$2) ON CONFLICT DO NOTHING",[actor.id,today]);
+    await inTransaction(db,async client=>{
+      const activity=await client.query("INSERT INTO public.mc_daily_activity(account_id,activity_date) VALUES($1,$2) ON CONFLICT DO NOTHING RETURNING account_id",[actor.id,today]);
+      if(activity.rows.length)await recordEvent(client,'activity_marked','activity:'+actor.id+':'+today,actor.id,actor.id,{day:today});
+    });
     return respond(res,200,{ok:true,activeDate:today});
   }
   if(action==='submit'){
@@ -93,25 +97,42 @@ export default async function handler(req,res){
       const data=Buffer.from(image.slice('data:image/jpeg;base64,'.length),'base64');
       if(data.length>110000||data.length<4||data[0]!==255||data[1]!==216||data[2]!==255)return respond(res,400,{error:'INVALID_EVIDENCE'});
     }
-    await db.query("INSERT INTO public.mc_daily_activity(account_id,activity_date) VALUES($1,$2) ON CONFLICT DO NOTHING",[actor.id,today]);
-    const saved=await db.query("INSERT INTO public.mc_contributions(account_id,activity_date,mission_type,points,note,evidence_data) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,status,points",[actor.id,today,kind,MISSION_POINTS[kind],note||null,image]);
-    return respond(res,201,{ok:true,contribution:saved.rows[0]});
+    const result=await inTransaction(db,async client=>{
+      await client.query("INSERT INTO public.mc_daily_activity(account_id,activity_date) VALUES($1,$2) ON CONFLICT DO NOTHING",[actor.id,today]);
+      const saved=await client.query("INSERT INTO public.mc_contributions(account_id,activity_date,mission_type,points,note,evidence_data) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,status,points",[actor.id,today,kind,MISSION_POINTS[kind],note||null,image]);
+      const mission=saved.rows[0];
+      await recordEvent(client,'mission_submitted','mission:submitted:'+mission.id,actor.id,actor.id,{day:today,missionType:kind,points:mission.points,status:'pendente'});
+      return mission;
+    });
+    return respond(res,201,{ok:true,contribution:result});
   }
   if(action==='review'){
     if(!access.canReview)return respond(res,403,{error:'FORBIDDEN'});
     const id=String(body.id||'');
     if(!UUID.test(id)||!['aprovado','rejeitado'].includes(body.status))return respond(res,400,{error:'INVALID_REVIEW'});
-    const result=await db.query("UPDATE public.mc_contributions SET status=$2,reviewed_by=$3,reviewed_at=now() WHERE id=$1 AND status='pendente' AND account_id<>$3 RETURNING id",[id,body.status,actor.id]);
-    if(!result.rows.length)return respond(res,409,{error:'NOT_PENDING_OR_SELF'});
+    const reviewed=await inTransaction(db,async client=>{
+      const result=await client.query("UPDATE public.mc_contributions SET status=$2,reviewed_by=$3,reviewed_at=now() WHERE id=$1 AND status='pendente' AND account_id<>$3 RETURNING id,account_id,activity_date,points,mission_type",[id,body.status,actor.id]);
+      if(!result.rows.length)return null;
+      const row=result.rows[0],action=body.status==='aprovado'?'mission_approved':'mission_rejected';
+      const day=typeof row.activity_date==='string'?row.activity_date:row.activity_date.toISOString().slice(0,10);
+      await recordEvent(client,action,action+':'+id,actor.id,row.account_id,{day,points:row.points,missionType:row.mission_type,status:body.status});
+      return row;
+    });
+    if(!reviewed)return respond(res,409,{error:'NOT_PENDING_OR_SELF'});
     return respond(res,200,{ok:true});
   }
   if(action==='production'){
     if(!access.canManagePanel)return respond(res,403,{error:'FORBIDDEN'});
     const date=dateArg(body.date),choice=String(body.productionChoice||'').trim();
     if(choice.length<3||choice.length>250)return respond(res,400,{error:'INVALID_PRODUCTION'});
-    const total=await db.query("SELECT coalesce(sum(points),0)::int AS total FROM public.mc_contributions WHERE activity_date=$1 AND status='aprovado'",[date]);
-    if(total.rows[0].total<100)return respond(res,409,{error:'PANEL_BELOW_100'});
-    await db.query("INSERT INTO public.mc_qg_panels(activity_date,production_choice,closed_by,closed_at) VALUES($1,$2,$3,now()) ON CONFLICT(activity_date) DO UPDATE SET production_choice=excluded.production_choice,closed_by=excluded.closed_by,closed_at=now()",[date,choice,actor.id]);
+    const completed=await inTransaction(db,async client=>{
+      const total=await client.query("SELECT coalesce(sum(points),0)::int AS total FROM public.mc_contributions WHERE activity_date=$1 AND status='aprovado'",[date]);
+      if(total.rows[0].total<100)return false;
+      await client.query("INSERT INTO public.mc_qg_panels(activity_date,production_choice,closed_by,closed_at) VALUES($1,$2,$3,now()) ON CONFLICT(activity_date) DO UPDATE SET production_choice=excluded.production_choice,closed_by=excluded.closed_by,closed_at=now()",[date,choice,actor.id]);
+      await recordEvent(client,'qg_panel_closed','qg:closed:'+date,actor.id,null,{day:date,approved:total.rows[0].total});
+      return true;
+    });
+    if(!completed)return respond(res,409,{error:'PANEL_BELOW_100'});
     return respond(res,200,{ok:true});
   }
   return respond(res,400,{error:'UNKNOWN_ACTION'});

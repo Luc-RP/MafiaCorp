@@ -68,7 +68,9 @@ export function passwordPolicy(password,codename=''){
 
 export function profile(row){
   return {id:row.id,name:row.name,codename:row.codename,username:row.codename,
-    role:row.role,orgRole:row.org_role||'membro',permissions:permissionsFor(row),isActive:row.is_active,createdAt:row.created_at,lastAccess:row.last_login_at};
+    role:row.role,orgRole:row.org_role||'membro',isSystemAdmin:!!row.is_system_admin,
+    avatarData:row.avatar_data||null,permissions:permissionsFor(row),
+    isActive:row.is_active,createdAt:row.created_at,lastAccess:row.last_login_at};
 }
 
 export async function hashPassword(password){
@@ -114,9 +116,14 @@ export async function createSession(account,res,client=database()){
 }
 export async function userFromRequest(req,client=database()){
   const token=readCookie(req);if(!token)return null;
-  const result=await client.query(`SELECT a.id,a.name,a.codename,a.role,a.org_role,a.is_active,a.created_at,a.last_login_at,
-    a.password_revision,s.token_hash
+  const result=await client.query(`SELECT a.id,a.name,a.codename,a.role,a.org_role,a.is_system_admin,a.avatar_data,
+    a.is_active,a.created_at,a.last_login_at,a.password_revision,s.token_hash,
+    r.code AS role_code,r.label AS role_label,r.section AS role_section,
+    r.summary AS role_summary,r.access_percent AS role_access,r.allowed_views AS role_views,
+    r.can_view_all AS role_can_view_all,r.can_review AS role_can_review,
+    r.can_manage_panel AS role_can_manage_panel
     FROM public.mc_sessions s JOIN public.mc_accounts a ON a.id=s.account_id
+    LEFT JOIN public.mc_org_roles r ON r.code=a.org_role
     WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now()
     AND a.is_active=true AND s.password_revision=a.password_revision LIMIT 1`,[tokenHash(token)]);
   return result.rows[0]||null;

@@ -31,7 +31,7 @@ VALUES
 ON CONFLICT (code) DO NOTHING;
 ALTER TABLE public.mc_accounts ADD COLUMN IF NOT EXISTS is_system_admin boolean NOT NULL DEFAULT false;
 ALTER TABLE public.mc_accounts ADD COLUMN IF NOT EXISTS avatar_data text;
-ALTER TABLE public.mc_accounts ADD CONSTRAINT mc_accounts_avatar_valid CHECK (avatar_data IS NULL OR (length(avatar_data)<=90000 AND avatar_data LIKE 'data:image/jpeg;base64,%'));
+ALTER TABLE public.mc_accounts ADD CONSTRAINT mc_accounts_avatar_valid CHECK (char_length(avatar_data) <= 90000);
 UPDATE public.mc_accounts SET is_system_admin=true,updated_at=now()
  WHERE codename_normalized='luc' AND role='admin' AND org_role='admin_sistema';
 CREATE UNIQUE INDEX IF NOT EXISTS mc_one_system_admin ON public.mc_accounts(is_system_admin) WHERE is_system_admin=true;

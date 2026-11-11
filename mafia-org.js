@@ -134,12 +134,12 @@ function membersHtml(){
  '<div class="org-member-grid">'+(members.length?members.map(m=>{
   const isMine=m.id===ctx.currentUser.id;
   const score=m.approved===null?'Privado':m.approved+'%';
-  return '<div class="org-member-card"><div class="org-member-title"><span class="org-avatar">'+(m.avatarData?'<img src="'+e(m.avatarData)+'" alt="Foto">':e(m.codename.slice(0,2).toUpperCase()))+'</span><span><b>'+e(m.codename)+'</b><small>'+e(m.name)+'</small></span></div>'+
+  return '<div class="org-member-card"><div class="org-member-title"><span class="org-avatar">'+(m.avatarData?'<img src="'+e(m.avatarData)+'" alt="Foto">':e(m.codename.slice(0,2).toUpperCase()))+'</span><span><b>'+(payload.permissions.canViewAll||isMine?'<button class="org-member-name" data-org-performance="'+e(m.id)+'" aria-label="Ver desempenho de '+e(m.codename)+'">'+e(m.codename)+'</button>':e(m.codename))+'</b><small>'+e(m.name)+'</small></span></div>'+
    '<div class="org-member-role">'+e(label(m.orgRole))+'</div>'+
    '<div class="org-member-points"><strong>'+score+'</strong><span>'+(m.pending===null?'Contribuição pessoal':m.pending+'% pendente')+'</span></div>'+
    (m.approved!==null?bar(m.approved,20):'')+
    '<div class="org-member-foot">'+badge(m.activeToday?'Ativo no dia':'Sem atividade marcada',m.activeToday?'green':'')+
-   ((payload.permissions.canViewAll||isMine)?'<button data-org-member="'+e(m.id)+'">Ver log / prints</button>':'')+'</div></div>';
+   ((payload.permissions.canViewAll||isMine)?'<button data-org-member="'+e(m.id)+'">Ver log / prints</button><button data-org-performance="'+e(m.id)+'">Desempenho</button>':'')+'</div></div>';
  }).join(''):'<p class="org-empty">Nenhuma conta central cadastrada.</p>')+'</div></section>';
 }
 function missionsHtml(){
@@ -161,7 +161,7 @@ function contributionRows(){
  const list=(payload.contributions||[]).filter(item=>!selectedMember||item.accountId===selectedMember);
  return '<section class="org-panel"><div class="org-panel-top"><h2>Registro de entregas</h2><span>'+list.length+' registro(s)</span></div>'+
  '<div class="org-log-table-wrap"><table class="org-log-table"><thead><tr><th>Integrante</th><th>Missão / Log</th><th>Pontos</th><th>Situação</th><th>Comprovante</th><th>Conferência</th></tr></thead><tbody>'+
- (list.length?list.map(item=>'<tr><td>'+e(item.codename)+'</td>'+
+ (list.length?list.map(item=>'<tr><td><button class="org-log-member" data-org-performance="'+e(item.accountId)+'">'+e(item.codename)+'</button></td>'+
  '<td><strong>'+e(MISSIONS[item.missionType]?.[0]||item.missionType)+'</strong><small>'+e(item.note||'Sem log escrito')+'</small></td>'+
  '<td>'+item.points+'%</td>'+
  '<td>'+badge(item.status,item.status==='aprovado'?'green':item.status==='rejeitado'?'red':'')+'</td>'+
@@ -232,6 +232,7 @@ function wire(){
    b.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();open();}});
  });
  document.querySelectorAll('[data-org-member]').forEach(b=>b.addEventListener('click',()=>ctx.navigate('contribuicoes',{memberId:b.dataset.orgMember})));
+ document.querySelectorAll('[data-org-performance]').forEach(b=>b.addEventListener('click',()=>ctx.navigate('member-performance',{memberId:b.dataset.orgPerformance})));
  const date=document.getElementById('org-date');
  if(date)date.addEventListener('change',()=>{selectedDate=date.value;update();});
  const selected=document.getElementById('org-member-filter');
@@ -271,7 +272,7 @@ function wire(){
  });
 }
 function render(view,context,params={}){
- ctx=context;mode=view;contextKey=view;payload=null;selectedDate='';selectedMember=String(params.memberId||'');selectedRole=String(params.orgRole||'');
+ ctx=context;mode=view;contextKey=view;payload=null;selectedDate=String(params.date||'');selectedMember=String(params.memberId||'');selectedRole=String(params.orgRole||'');
  const root=area();if(!root)return;
  const title=view==='hierarquia'?'Hierarquia da organização':view==='roster'?'Integrantes e resultados':'Metas e contribuições';
  const subtitle=view==='hierarquia'?'Cargos, atribuições e níveis de acesso por setor.':

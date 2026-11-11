@@ -87,3 +87,25 @@
 .org-preview img{max-width:100%;max-height:68vh;object-fit:contain}
 @media(max-width:1160px){.org-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:820px){.org-columns{grid-template-columns:1fr}.org-grid.three{grid-template-columns:1fr}.org-grid.two{grid-template-columns:1fr}.org-shell{padding:18px 11px 40px}.org-head h1{font-size:26px}.org-seal{width:56px;height:67px;font-size:16px}.org-stats{gap:8px}.org-stats>div{padding:12px}.org-stats strong{font-size:21px}}
+
+
+/* Infográfico vivo de hierarquia, construído dos cargos e membros cadastrados */
+.org-custom{margin-top:18px;padding-top:16px;border-top:1px solid #3b444e}
+.org-custom h3{color:#d7e0e9;font:500 18px Georgia,serif;margin:0 0 12px}
+.org-network{margin-top:25px;text-align:left;background:linear-gradient(150deg,#19212a,#090d12);border:1px solid #4c5866;box-shadow:0 18px 42px #0005;overflow:hidden}
+.org-network-head{padding:17px 20px;display:flex;justify-content:space-between;align-items:center;gap:14px;border-bottom:1px solid #43505d}
+.org-network-head h2{font:500 21px Georgia,serif;color:#e9edf1;margin:7px 0}
+.org-network-head p,.org-graph-legend{color:#91a4b6;font:10px/1.7 var(--font-mono,monospace)}
+.org-network-head>span{font:9px var(--font-mono,monospace);color:#ced6df;white-space:nowrap}
+.org-graph-scroll{overflow-x:auto;overflow-y:hidden;background:radial-gradient(ellipse at center,#23303d55,transparent 65%),#090c11;padding:10px}
+.org-graph-scroll svg{display:block;min-width:760px;width:100%;max-height:900px;margin:0 auto}
+.org-graph-edge{fill:none;stroke:#879bab;stroke-width:1.5;opacity:.68}
+.org-graph-node{cursor:pointer;outline:0}
+.org-graph-node rect{fill:url(#orgSilver);stroke:#7b8b9d;stroke-width:1.4}
+.org-graph-node:hover rect,.org-graph-node:focus-visible rect{stroke:#f4f6f9;stroke-width:2.5;fill:#36424f}
+.org-graph-title{fill:#edf1f5;font:600 13px Georgia,serif}
+.org-graph-person{fill:#a8b6c5;font:11px var(--font-mono,monospace)}
+.org-graph-percent{fill:#b9c7d5;font:9px var(--font-mono,monospace)}
+.org-graph-legend{border-top:1px solid #3c4652;padding:12px 18px}
+.org-avatar{overflow:hidden}.org-avatar img{height:100%;width:100%;object-fit:cover}
+@media(max-width:760px){.org-network-head{align-items:flex-start;flex-direction:column}.org-graph-scroll svg{width:760px}.org-network{margin-top:17px}}

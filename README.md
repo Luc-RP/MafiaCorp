@@ -189,6 +189,18 @@ Continuam acessíveis **os módulos legados** de investigação, suspeitos, veí
 
 As atualizações **não sobrescrevem o armazenamento local de visitantes existentes** e preservam os recursos anteriores.
 
+## Correção do mapa em Locais (11/11/2026)
+
+O formulário legado **Locais → Novo/Editar Local** foi corrigido para exibir o mapa de **Los Santos (GTA V/FiveM)**, e não o OpenStreetMap do planeta Terra.
+
+- Reutiliza a transformação GTA/FiveDock `L.Transformation(.02072,117.3,-.0205,172.8)` e os tiles públicos de GTA V (`assets.fivedock.dev`, fallback `cdn.fivedock.dev`).
+- Clique no mapa cria o marcador; arrastar atualiza as coordenadas X/Y do GTA V. Os campos internos `longitude` e `latitude` são preservados por compatibilidade, mas aparecem como **Coordenada X (GTA V)** e **Coordenada Y (GTA V)**.
+- Removeu-se o botão **Usar minha localização atual**, que consultava GPS real do navegador e não tem aplicação em GTA RP.
+- Registros novos salvam `coordinateSystem:'gta-v'`. Registros antigos sem esse indicador preservam seus valores reais e não exibem marcador GTA automaticamente; ao clicar no novo mapa ou editar X/Y, são convertidos explicitamente.
+- O mapa respeita permissões de somente leitura, limita a navegação ao território da ilha, e sua instância é destruída ao fechar o modal.
+- Sem migração destrutiva, exclusão ou mudança nos outros módulos. Teste simulado de click, drag, recarga, legado e somente leitura passou.
+- Mudança apenas no `index.html`. O mapa GTA principal (`mafia-center.js`) foi preservado.
+
 ## Mapa GTA V
 
 O mapa usa o **Leaflet 1.9.4** e tiles do FiveDock referenciados em:

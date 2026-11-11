@@ -73,7 +73,7 @@ function tableHtml(){
   '<td><span class="am-status '+(u.isActive?'is-active':'is-blocked')+'">'+(u.isActive?'ATIVO':'BLOQUEADO')+'</span></td>'+
   '<td class="am-muted">'+esc(safeDate(u.lastAccess))+'</td><td><div class="am-actions">'+
   '<button class="am-btn" data-cloud="profile" data-id="'+esc(u.id)+'">Ficha</button>'+
-  '<button class="am-btn" data-cloud="orgRole" data-id="'+esc(u.id)+'" '+(own&&!u.isSystemAdmin?'disabled':'')+'>Cargo</button>'+'<button class="am-btn" data-cloud="contributions" data-id="'+esc(u.id)+'">Metas</button>'+'<button class="am-btn" data-cloud="password" data-id="'+esc(u.id)+'" '+(own?'disabled':'')+'>Senha</button>'+
+  '<button class="am-btn" data-cloud="orgRole" data-id="'+esc(u.id)+'" '+(own&&!u.isSystemAdmin?'disabled':'')+'>Cargo</button>'+'<button class="am-btn" data-cloud="contributions" data-id="'+esc(u.id)+'">Metas</button>'+ '<button class="am-btn" data-cloud="performance" data-id="'+esc(u.id)+'">Desempenho</button>'+'<button class="am-btn" data-cloud="password" data-id="'+esc(u.id)+'" '+(own?'disabled':'')+'>Senha</button>'+
   '<button class="am-btn am-warning-btn" data-cloud="toggle" data-id="'+esc(u.id)+'" '+(own?'disabled':'')+'>'+(u.isActive?'Bloquear':'Reativar')+'</button>'+
   '<button class="am-btn am-danger" data-cloud="delete" data-id="'+esc(u.id)+'" '+(own?'disabled':'')+'>Excluir</button></div></td></tr>';
  }).join(''):'<tr><td colspan="5"><div class="am-empty">Nenhuma conta encontrada.</div></td></tr>')+'</tbody></table></div>';
@@ -200,6 +200,7 @@ function dispatch(action,id){
  const u=users.find(x=>x.id===id);if(!u)return;
  if(action==='profile')return profile(u);
  if(action==='contributions'){if(ctx.navigate)ctx.navigate('contribuicoes',{memberId:u.id});return;}
+ if(action==='performance'){if(ctx.navigate)ctx.navigate('member-performance',{memberId:u.id});return;}
  if(action==='orgRole'&&(u.id!==ctx.currentUser.id||u.isSystemAdmin))return changeOrgRole(u);
  if(u.id===ctx.currentUser.id)return;
  if(action==='password')return reset(u);

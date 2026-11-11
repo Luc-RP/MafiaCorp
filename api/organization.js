@@ -98,7 +98,8 @@ export default async function handler(req,res){
       if(data.length>110000||data.length<4||data[0]!==255||data[1]!==216||data[2]!==255)return respond(res,400,{error:'INVALID_EVIDENCE'});
     }
     const result=await inTransaction(db,async client=>{
-      await client.query("INSERT INTO public.mc_daily_activity(account_id,activity_date) VALUES($1,$2) ON CONFLICT DO NOTHING",[actor.id,today]);
+      const activity=await client.query("INSERT INTO public.mc_daily_activity(account_id,activity_date) VALUES($1,$2) ON CONFLICT DO NOTHING RETURNING account_id",[actor.id,today]);
+      if(activity.rows.length)await recordEvent(client,'activity_marked','activity:'+actor.id+':'+today,actor.id,actor.id,{day:today});
       const saved=await client.query("INSERT INTO public.mc_contributions(account_id,activity_date,mission_type,points,note,evidence_data) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,status,points",[actor.id,today,kind,MISSION_POINTS[kind],note||null,image]);
       const mission=saved.rows[0];
       await recordEvent(client,'mission_submitted','mission:submitted:'+mission.id,actor.id,actor.id,{day:today,missionType:kind,points:mission.points,status:'pendente'});

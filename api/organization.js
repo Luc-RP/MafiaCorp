@@ -19,14 +19,18 @@ function dateArg(raw){
 }
 async function overview(actor,date){
  const db=database(),access=permissionsFor(actor);
- const [members,progress,entries,panel,activity,roles]=await Promise.all([
-  db.query("SELECT a.id,a.name,a.codename,a.org_role,a.is_active,a.avatar_data,r.label AS role_label FROM public.mc_accounts a LEFT JOIN public.mc_org_roles r ON r.code=a.org_role WHERE a.org_role<>'admin_sistema' ORDER BY CASE WHEN a.org_role LIKE 'lider_%' THEN 1 WHEN a.org_role='gerente_geral' THEN 2 ELSE 3 END,a.codename LIMIT 500"),
-  db.query("SELECT account_id,coalesce(sum(points) FILTER (WHERE status='aprovado'),0)::int AS approved,coalesce(sum(points) FILTER (WHERE status='pendente'),0)::int AS pending FROM public.mc_contributions WHERE activity_date=$1 GROUP BY account_id",[date]),
-  db.query("SELECT c.id,c.account_id,a.codename,c.mission_type,c.points,c.note,c.status,c.created_at,c.reviewed_at,(c.evidence_data IS NOT NULL) AS has_evidence FROM public.mc_contributions c JOIN public.mc_accounts a ON a.id=c.account_id WHERE c.activity_date=$1 AND ($2::boolean OR c.account_id=$3) ORDER BY c.created_at DESC LIMIT 300",[date,access.canViewAll,actor.id]),
-  db.query("SELECT production_choice,closed_at FROM public.mc_qg_panels WHERE activity_date=$1",[date]),
-  db.query("SELECT account_id FROM public.mc_daily_activity WHERE activity_date=$1",[date]),
-  db.query("SELECT code,label,section,summary,access_percent,is_builtin FROM public.mc_org_roles ORDER BY access_percent DESC,label")
- ]);
+ const client=await db.connect();
+ let members,progress,entries,panel,activity,roles;
+ try{
+ [members,progress,entries,panel,activity,roles]=[
+  await client.query("SELECT a.id,a.name,a.codename,a.org_role,a.is_active,a.avatar_data,r.label AS role_label FROM public.mc_accounts a LEFT JOIN public.mc_org_roles r ON r.code=a.org_role WHERE a.org_role<>'admin_sistema' ORDER BY CASE WHEN a.org_role LIKE 'lider_%' THEN 1 WHEN a.org_role='gerente_geral' THEN 2 ELSE 3 END,a.codename LIMIT 500"),
+  await client.query("SELECT account_id,coalesce(sum(points) FILTER (WHERE status='aprovado'),0)::int AS approved,coalesce(sum(points) FILTER (WHERE status='pendente'),0)::int AS pending FROM public.mc_contributions WHERE activity_date=$1 GROUP BY account_id",[date]),
+  await client.query("SELECT c.id,c.account_id,a.codename,c.mission_type,c.points,c.note,c.status,c.created_at,c.reviewed_at,(c.evidence_data IS NOT NULL) AS has_evidence FROM public.mc_contributions c JOIN public.mc_accounts a ON a.id=c.account_id WHERE c.activity_date=$1 AND ($2::boolean OR c.account_id=$3) ORDER BY c.created_at DESC LIMIT 300",[date,access.canViewAll,actor.id]),
+  await client.query("SELECT production_choice,closed_at FROM public.mc_qg_panels WHERE activity_date=$1",[date]),
+  await client.query("SELECT account_id FROM public.mc_daily_activity WHERE activity_date=$1",[date]),
+  await client.query("SELECT code,label,section,summary,access_percent,is_builtin FROM public.mc_org_roles ORDER BY access_percent DESC,label")
+ ];
+ }finally{await client.release();}
  const approved=progress.rows.reduce((sum,row)=>sum+Number(row.approved||0),0);
  const own=progress.rows.find(x=>x.account_id===actor.id);
  const activityIds=new Set(activity.rows.map(x=>x.account_id));

@@ -32,7 +32,7 @@ async function overview(actor,date){
   await client.query("SELECT code,label,section,summary,access_percent,is_builtin FROM public.mc_org_roles ORDER BY access_percent DESC,label")
  ];
  if(access.canReview){
-   reviewQueue=await client.query("SELECT c.id,c.account_id,a.codename,to_char(c.activity_date,'YYYY-MM-DD') AS day,c.mission_type,c.points,c.note,c.created_at,(c.evidence_data IS NOT NULL) AS has_evidence FROM public.mc_contributions c JOIN public.mc_accounts a ON a.id=c.account_id WHERE c.status='pendente' AND c.account_id<>$1 ORDER BY c.activity_date DESC,c.created_at DESC LIMIT 100",[actor.id]);
+   reviewQueue=await client.query("SELECT c.id,c.account_id,a.codename,to_char(c.activity_date,'YYYY-MM-DD') AS day,c.mission_type,c.points,c.note,c.created_at,(c.evidence_data IS NOT NULL) AS has_evidence FROM public.mc_contributions c JOIN public.mc_accounts a ON a.id=c.account_id WHERE c.status='pendente' AND (c.account_id<>$1 OR $2::boolean) ORDER BY c.activity_date DESC,c.created_at DESC LIMIT 100",[actor.id,access.canSelfReview]);
  }
  }finally{await client.release();}
  const approved=progress.rows.reduce((sum,row)=>sum+Number(row.approved||0),0);
@@ -117,14 +117,14 @@ export default async function handler(req,res){
     const id=String(body.id||'');
     if(!UUID.test(id)||!['aprovado','rejeitado'].includes(body.status))return respond(res,400,{error:'INVALID_REVIEW'});
     const reviewed=await inTransaction(db,async client=>{
-      const result=await client.query("UPDATE public.mc_contributions SET status=$2,reviewed_by=$3,reviewed_at=now() WHERE id=$1 AND status='pendente' AND account_id<>$3 RETURNING id,account_id,activity_date,points,mission_type",[id,body.status,actor.id]);
+      const result=await client.query("UPDATE public.mc_contributions SET status=$2,reviewed_by=$3,reviewed_at=now() WHERE id=$1 AND status='pendente' AND (account_id<>$3 OR $4::boolean) RETURNING id,account_id,activity_date,points,mission_type",[id,body.status,actor.id,access.canSelfReview]);
       if(!result.rows.length)return null;
       const row=result.rows[0],action=body.status==='aprovado'?'mission_approved':'mission_rejected';
       const day=typeof row.activity_date==='string'?row.activity_date:row.activity_date.toISOString().slice(0,10);
       await recordEvent(client,action,action+':'+id,actor.id,row.account_id,{day,points:row.points,missionType:row.mission_type,status:body.status});
       return row;
     });
-    if(!reviewed)return respond(res,409,{error:'NOT_PENDING_OR_SELF'});
+    if(!reviewed)return respond(res,409,{error:'NOT_PENDING_OR_NOT_ALLOWED'});
     return respond(res,200,{ok:true});
   }
   if(action==='production'){

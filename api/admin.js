@@ -94,6 +94,6 @@ export default async function handler(req,res){
    await client.query('COMMIT');
    return respond(res,200,{ok:true,action:event});
   }catch(err){try{await client.query('ROLLBACK')}catch{};throw err}
-  finally{client.release();}
+  finally{await client.release();}
  }catch(err){serverError(res,err);}
 }

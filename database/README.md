@@ -1,3 +1,12 @@
+## Gate 006: Calendário histórico e saída de eventos para futuro Discord
+
+- `api/performance.js` consulta `mc_contributions` e `mc_daily_activity` por ano, de novembro/2026 a dezembro/2030. A autorização é validada no servidor. Os dados não são duplicados em outra tabela e não existe preenchimento fictício de dias sem atividade.
+- `mc_event_outbox` foi criada pela migração `006_discord_outbox.sql` sem excluir registros. Campos: identificador único de evento, tipo, ator, integrante, resumo JSON sem fotos, data, estado da entrega e tentativas futuras.
+- `api/organization.js` registra atomicamente `activity_marked`, `mission_submitted`, `mission_approved`, `mission_rejected` e `qg_panel_closed`, sempre junto da gravação operacional. Os eventos usam chaves únicas para evitar duplicações.
+- **Discord desativado:** não existe token de bot, webhook ou emissor. O conteúdo da fila não sai do PostgreSQL, aguardando projeto e autorização da integração.
+- Regras de aprovação fixas no servidor: administrador principal, Lideranças 01/02/03, Gerente Geral e Gerente de Farm. Aprovação da própria entrega é proibida.
+- Validações: SQL histórico real de Coringa, 10/11/2026, ativo, 10% pendente; matriz de cargos testada com mocks e sem mutações de contas reais. Teste com sessão real de aprovador e outra de integrante ainda pendente.
+
 # MafiaCorp: migração de contas locais para Aiven PostgreSQL
 
 **Status em 10/11/2026:** PostgreSQL 18.6 `mafiacorp` criado e em `RUNNING` na Aiven, projeto `ldxgamess-1ba9`, plano `free-1-1gb`, banco `defaultdb`.

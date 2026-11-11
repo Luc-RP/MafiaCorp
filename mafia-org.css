@@ -115,3 +115,9 @@
 .org-member-name:focus-visible,.org-log-member:focus-visible{outline:2px solid #e7eff8;outline-offset:3px}
 .org-member-foot{justify-content:flex-start}
 .org-review-note{margin:0 0 14px;padding:11px 14px;border:1px solid #688079;background:#172923;color:#c6e5d3;font:10px/1.7 var(--font-mono,monospace)}
+
+/* Aprovação de entregas de outros integrantes, inclusive dias anteriores */
+.org-review-queue{border-color:#687b72;}
+.org-review-queue .org-panel-top{border-bottom-color:#50695a}
+.org-review-empty{font:11px/1.8 var(--font-mono,monospace);color:#adc0b4;padding:16px 18px;max-width:810px}
+.org-review-queue .org-log-table-wrap{max-height:380px;overflow:auto}

@@ -407,6 +407,7 @@ tbody tr:last-child td{border-bottom:none;}
 <link rel="stylesheet" href="/mafia-cloud-ui.css">
 <link rel="stylesheet" href="/mafia-org.css">
 <link rel="stylesheet" href="/mafia-profile.css">
+<link rel="stylesheet" href="/mafia-performance.css">
 </head>
 <body>
 
@@ -487,6 +488,7 @@ tbody tr:last-child td{border-bottom:none;}
 <script src="/mafia-cloud-ui.js"></script>
 <script src="/mafia-org.js"></script>
 <script src="/mafia-profile.js"></script>
+<script src="/mafia-performance.js"></script>
 <script>
 (function(){
 "use strict";
@@ -556,6 +558,7 @@ function hasViewAccess(view){
   if(!Array.isArray(list))return false;
   if(view==='investigation-detail')return list.includes('investigations');
   if(view==='suspect-detail')return list.includes('suspects');
+  if(view==='member-performance')return list.includes('roster');
   return list.includes(view);
 }
 function canArchive(){ return canEdit(); }
@@ -721,7 +724,7 @@ const NAV = [
     {id:'cleanup-local', label:'Limpar dados antigos', icon:'⌫'},
   ]},
 ];
-const VIEW_LABELS = {perfil:'MEU PERFIL',hierarquia:'HIERARQUIA DA ORGANIZAÇÃO',roster:'INTEGRANTES E RESULTADOS',contribuicoes:'METAS E CONTRIBUIÇÕES','cleanup-local':'LIMPEZA DE DADOS LOCAIS',admin:'PAINEL ADMINISTRATIVO',infographics:'INFOGRÁFICOS','rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
+const VIEW_LABELS = {'member-performance':'DESEMPENHO INDIVIDUAL',perfil:'MEU PERFIL',hierarquia:'HIERARQUIA DA ORGANIZAÇÃO',roster:'INTEGRANTES E RESULTADOS',contribuicoes:'METAS E CONTRIBUIÇÕES','cleanup-local':'LIMPEZA DE DADOS LOCAIS',admin:'PAINEL ADMINISTRATIVO',infographics:'INFOGRÁFICOS','rp-members':'MEMBROS DA FAMÍLIA','rp-missions':'MISSÕES E CONTRATOS','rp-goals':'METAS','rp-map':'MAPA GTA V','rp-locations':'LOCAIS E QGS','rp-network':'MAPA DE CONEXÕES','rp-backup':'BACKUP DA CENTRAL',dashboard:'CENTRAL OPERACIONAL', investigations:'INVESTIGAÇÕES', suspects:'INVESTIGADOS', vehicles:'VEÍCULOS', addresses:'LOCAIS', contacts:'CONTATOS', associates:'ASSOCIADOS', factions:'FACÇÕES', evidence:'CENTRAL DE EVIDÊNCIAS', operations:'OPERAÇÕES', team:'EQUIPE INVESTIGATIVA', reports:'RELATÓRIOS', connections:'CONNECTION MAP', audit:'AUDITORIA'};
 
 function renderSidebar(){
   const nav = document.getElementById('sb-nav');
@@ -776,6 +779,10 @@ function renderView(){
         saveDB();
       }
     });
+    return;
+  }
+  if(CURRENT_VIEW==='member-performance'&&window.MafiaPerformance){
+    window.MafiaPerformance.render({currentUser:CURRENT_USER,navigate,toast,isActive:()=>CURRENT_VIEW==='member-performance'},CURRENT_PARAMS);
     return;
   }
   if(['hierarquia','roster','contribuicoes'].includes(CURRENT_VIEW)&&window.MafiaOrg){

@@ -1,5 +1,17 @@
 # MafiaCorp | Central da Família (FiveM / GTA RP)
 
+## Gate 007: F5 e conferência de metas (11/11/2026)
+
+**Diagnóstico do banco:** apenas duas contas ativas, Luc (`admin_sistema`) e Coringa (`lider_01`), com sessões válidas. As três contribuições pendentes pertencem ao Coringa. Portanto, Coringa não pode aprovar essas entregas por serem suas, independentemente da Liderança; Luc pode conferi-las. Não houve mudança automática no status das contribuições.
+
+**Correções**
+- `api/organization.js` agora inclui uma fila `reviewQueue` das até 100 entregas `pendente` de **outros** integrantes, cobrindo dias anteriores. A consulta é restrita a cargos com `canReview`, verificada no servidor; exclui `account_id` do aprovador. Aprovações usam a validação transacional já existente e registram evento de auditoria/outbox.
+- `mafia-org.js` mostra **Entregas aguardando minha aprovação** com data, missão, log, print e botões Aprovar/Rejeitar. Para entregas próprias, exibe que outro responsável deve aprovar, em vez do traço sem explicação.
+- `index.html`: na atualização F5, a interface mostra **Verificando sua sessão** enquanto consulta diretamente `/api/auth?action=me`. O antigo health-check obrigatório foi removido da sequência de inicialização, porque um 503 temporário na Aiven impedia a restauração da sessão. Agora há até 3 tentativas curtas para falha de rede/503 e botão **Tentar reconectar**. Apenas resposta 401 (sessão inválida/expirada) mostra o formulário de login; não há autenticação local de fallback. Cookies e senhas não ficam expostos ao frontend.
+- A sessão continua definida por cookie seguro HttpOnly do PostgreSQL e não pelo armazenamento local. O botão **Encerrar sessão** mantém revogação no servidor.
+
+**Validações:** consultas SQL reais somente leitura confirmaram a atribuição de cargos e contagens de pendências; simulações de atualização passaram em sessão válida, erro temporário, 401, 503 persistente e recuperação; renderização de aprovação passou com Coringa e Luc. Homologação com cookies reais em dois navegadores ainda pendente.
+
 ## Gate 006: Aprovação de metas, desempenho até 2030 e fila Discord (10/11/2026)
 
 **Cargos autorizados a aprovar contribuições RP:** Liderança 01, 02, 03, Gerente Geral e Gerente de Farm. O Administrador do Sistema também conserva aprovação. Outros cargos, inclusive Gerente de Ação, Elite, Membros e cargos personalizados, não aprovam. O backend impede aprovação da própria contribuição.

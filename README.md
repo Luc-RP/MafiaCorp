@@ -1,5 +1,16 @@
 # MafiaCorp | Central da Família (FiveM / GTA RP)
 
+## Gate 005: administracao, cargos dinamicos e perfil (10/11/2026)
+
+- Conta Luc marcada como administradora permanente pelo campo is_system_admin; pode escolher um cargo RP ou retornar a admin_sistema sem perder privilegios.
+- Liderancas 01, 02 e 03 podem atribuir cargos, gerenciar contas e criar cargos personalizados; outros cargos nao recebem permissoes administrativas.
+- PostgreSQL: tabela mc_org_roles criada e populada com onze cargos originais. Avatar pequeno em mc_accounts.avatar_data e vinculo de org_role por chave estrangeira.
+- APIs novas: /api/roles (CRUD protegido) e /api/profile (perfil do proprio usuario e JPEG compacto).
+- Painel ADM: Cargo liberado no proprio administrador permanente e catalogo para criar, editar e excluir cargos nao originais.
+- Menu Meu Perfil para editar nome, codinome e foto; hierarquia exibe infografico SVG navegavel abaixo do organograma.
+- Plano Aiven Free atingiu temporariamente limite de conexoes durante testes paralelos. Pool Node ajustado para conexoes ociosas de 1 segundo; leitura posterior confirmou 11 cargos e um administrador permanente.
+- Sem limpeza de contas, senhas ou historico. Homologacao com sessoes reais e segundo integrante ainda pendente.
+
 ## Administrador independente da hierarquia
 
 Em 10/11/2026, por decisão expressa do responsável, a conta central `Luc` foi alterada de `lider_01` para `admin_sistema`, preservando o papel técnico `admin`, a senha e a sessão.

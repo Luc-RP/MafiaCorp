@@ -4,11 +4,12 @@
 const API='/api/organization';
 const e=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const TITLES={
+ admin_sistema:'Administrador do Sistema',
  lider_01:'Liderança 01',lider_02:'Liderança 02',lider_03:'Liderança 03',
  gerente_geral:'Gerente Geral',gerente_farm:'Gerente de Farm',gerente_acao:'Gerente de Ação',
  estrategista:'Estrategista / Inteligência',logistica:'Logística',elite:'Elite / Operadores',membro:'Membro / Integrante'
 };
-const ACCESS={lider_01:100,lider_02:100,lider_03:100,gerente_geral:90,gerente_farm:65,gerente_acao:65,estrategista:60,logistica:55,elite:40,membro:25};
+const ACCESS={admin_sistema:100,lider_01:100,lider_02:100,lider_03:100,gerente_geral:90,gerente_farm:65,gerente_acao:65,estrategista:60,logistica:55,elite:40,membro:25};
 const DESCRIPTIONS={
  lider_01:['Definir objetivos e diretrizes','Tomar decisões importantes','Acompanhar Gerente Geral','Aprovar promoções e mudanças','Resolver situações internas'],
  lider_02:['Definir objetivos e diretrizes','Tomar decisões importantes','Acompanhar Gerente Geral','Aprovar promoções e mudanças','Resolver situações internas'],
@@ -64,11 +65,12 @@ function badge(text,cls=''){return '<span class="org-badge '+cls+'">'+e(text)+'<
 function overall(){
  const val=payload.collectiveApproved||0;
  const mine=payload.ownApproved||0,pending=payload.ownPending||0;
+ const exempt=payload.permissions?.canSubmit===false;
  return '<div class="org-stats">'+
   '<div><small>PAINEL COLETIVO DO QG</small><strong>'+val+'% / 100%</strong>'+bar(val)+'</div>'+
-  '<div><small>MINHA META DO DIA ATIVO</small><strong>'+mine+'% / 20%</strong>'+bar(mine,20)+'</div>'+
+  '<div><small>MINHA META DO DIA ATIVO</small><strong>'+(exempt?'ISENTO':mine+'% / 20%')+'</strong>'+(exempt?'<span class="org-sub">Administrador fora da hierarquia RP</span>':bar(mine,20))+'</div>'+
   '<div><small>AGUARDANDO CONFERÊNCIA</small><strong>'+pending+'%</strong><span class="org-sub">Pontuação ainda não aprovada</span></div>'+
-  '<div><small>ATIVIDADE DE HOJE</small><strong>'+(payload.ownActive?'ATIVO':'NÃO MARCADO')+'</strong><span class="org-sub">Só há meta em dias ativos</span></div>'+
+  '<div><small>ATIVIDADE DE HOJE</small><strong>'+(exempt?'ADMINISTRADOR':payload.ownActive?'ATIVO':'NÃO MARCADO')+'</strong><span class="org-sub">'+(exempt?'Sem contribuição obrigatória':'Só há meta em dias ativos')+'</span></div>'+
  '</div>';
 }
 function membersHtml(){
@@ -118,9 +120,9 @@ function contributionHtml(){
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
  const isToday=payload.date===today;
  return '<div class="org-controls"><label>Dia consultado <input id="org-date" type="date" value="'+e(payload.date)+'" max="'+e(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date()))+'"></label>'+
- '<button class="org-btn" id="org-my-activity" '+(!isToday||payload.ownActive?'disabled':'')+'>'+(isToday?(payload.ownActive?'Atividade registrada':'Marcar que estive ativo hoje'):'Somente consulta histórica')+'</button>'+
+ (payload.permissions.canSubmit?'<button class="org-btn" id="org-my-activity" '+(!isToday||payload.ownActive?'disabled':'')+'>'+(isToday?(payload.ownActive?'Atividade registrada':'Marcar que estive ativo hoje'):'Somente consulta histórica')+'</button>':'')+
  (payload.permissions.canViewAll?'<label>Integrante<select id="org-member-filter"><option value="">Todos</option>'+payload.members.map(m=>'<option value="'+e(m.id)+'" '+(selectedMember===m.id?'selected':'')+'>'+e(m.codename)+'</option>').join('')+'</select></label>':'')+'</div>'+
- overall()+'<div class="org-columns">'+(isToday?submitHtml():'<section class="org-panel"><div class="org-panel-top"><h2>Histórico de entregas</h2></div><div class="org-inner">Entregas e marcações de atividade são registradas somente no dia atual. Esta data está em modo de consulta.</div></section>')+missionsHtml()+'</div>'+contributionRows()+
+ overall()+'<div class="org-columns">'+(isToday&&payload.permissions.canSubmit?submitHtml():'<section class="org-panel"><div class="org-panel-top"><h2>Histórico de entregas</h2></div><div class="org-inner">Entregas e marcações de atividade são registradas somente no dia atual. Esta data está em modo de consulta.</div></section>')+missionsHtml()+'</div>'+contributionRows()+
  (payload.permissions.canManagePanel?'<section class="org-panel"><div class="org-panel-top"><h2>Fechamento do painel</h2>'+badge(payload.collectiveApproved>=100?'Meta coletiva atingida':'Aguardando 100%',payload.collectiveApproved>=100?'green':'')+'</div>'+
  '<div class="org-inner"><p>Somente Liderança e Gerente Geral podem registrar a escolha da produção após 100% aprovado.</p>'+
  '<form id="org-production"><input name="productionChoice" maxlength="250" placeholder="Escolha da produção RP" required value="'+e(payload.panel?.production_choice||'')+'"><button class="org-btn" '+(payload.collectiveApproved<100?'disabled':'')+'>Registrar produção</button></form></div></section>':'');

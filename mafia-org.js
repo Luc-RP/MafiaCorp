@@ -23,8 +23,8 @@ const DESCRIPTIONS={
  membro:['Cumprir metas diárias quando ativo','Participar de atividades','Respeitar hierarquia','Evoluir dentro da organização','Contribuir para o RP']
 };
 const MISSIONS={aeronave:['Aeronave',10],caminhao:['Caminhão',5],submarino:['Submarino',5],cargueiro:['Cargueiro',5]};
-let ctx=null,mode=null,contextKey='',payload=null,selectedDate='',selectedMember='',busy=false,renderSerial=0;
-function label(role){return TITLES[role]||TITLES.membro;}
+let ctx=null,mode=null,contextKey='',payload=null,selectedDate='',selectedMember='',selectedRole='',busy=false,renderSerial=0;
+function label(role){return payload?.roles?.[role]?.label||TITLES[role]||TITLES.membro;}
 async function api(path=API,method='GET',body){
  const opts={method,credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}};
  if(body!==undefined){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
@@ -47,9 +47,64 @@ function valid(){return area() && ctx && (!ctx.isActive||ctx.isActive());}
 function shell(title,sub){return '<section class="org-shell"><header class="org-head"><div><div class="org-kicker">MAFIACORP / CENTRAL DA FAMÍLIA</div><h1>'+title+'</h1><p>'+sub+'</p></div><span class="org-seal">MC <small>COMANDO</small></span></header><div id="org-content"><p class="org-loading">Consultando o banco...</p></div></section>';}
 function roleCard(role,extra){
  const users=payload?.members?.filter(m=>m.orgRole===role)||[];
+ const def=payload?.roles?.[role];
  return '<div class="org-role-card '+(extra||'')+'"><div class="org-role-name">'+label(role)+'</div>'+
   '<div class="org-role-assigned">'+(users.length?users.map(m=>e(m.codename)).join(' · '):'Cargo disponível')+'</div>'+
-  '<div class="org-level">'+ACCESS[role]+'% de acesso</div><ul>'+DESCRIPTIONS[role].map(t=>'<li>'+e(t)+'</li>').join('')+'</ul></div>';
+  '<div class="org-level">'+(def?.access??ACCESS[role]??25)+'% de acesso</div><ul>'+((DESCRIPTIONS[role]||[def?.summary||'Cargo personalizado']).map(t=>'<li>'+e(t)+'</li>').join(''))+'</ul></div>';
+}
+function customRoleCards(){
+ const extra=Object.entries(payload?.roles||{}).filter(([key,def])=>!def.builtin);
+ return extra.length?'<div class="org-custom"><h3>Outros cargos da organização</h3><div class="org-grid two">'+
+ extra.map(([key])=>roleCard(key)).join('')+'</div></div>':'';
+}
+function hierarchyGraph(){
+ const known=[
+  ['lider_01',150,75],['lider_02',450,75],['lider_03',750,75],
+  ['gerente_geral',450,185],['gerente_farm',260,300],['gerente_acao',640,300],
+  ['logistica',115,415],['estrategista',785,415],
+  ['membro',260,525],['elite',640,525]
+ ];
+ const extra=Object.entries(payload?.roles||{}).filter(([key,def])=>!def.builtin);
+ const nodes=[...known,...extra.map(([code],i)=>[code,125+(i%4)*215,645+Math.floor(i/4)*110])];
+ const coords=new Map(nodes.map(([key,x,y])=>[key,{x,y}]));
+ const links=[['lider_01','gerente_geral'],['lider_02','gerente_geral'],['lider_03','gerente_geral'],
+  ['gerente_geral','gerente_farm'],['gerente_geral','gerente_acao'],
+  ['gerente_farm','logistica'],['gerente_acao','estrategista'],
+  ['gerente_farm','membro'],['gerente_acao','elite']];
+ for(const [key] of extra)links.push(['gerente_geral',key]);
+ const h=700+Math.max(0,Math.ceil(extra.length/4)-1)*110;
+ const paths=links.map(([from,to])=>{
+  const a=coords.get(from),b=coords.get(to);
+  if(!a||!b)return '';
+  const mid=(a.y+b.y)/2;
+  return '<path class="org-graph-edge" d="M'+a.x+' '+(a.y+31)+' V'+mid+' H'+b.x+' V'+(b.y-31)+'"/>';
+ }).join('');
+ const roleNodes=nodes.map(([code,x,y])=>{
+  const role=payload.roles?.[code]||{label:label(code),access:ACCESS[code]||25};
+  const people=(payload.members||[]).filter(m=>m.orgRole===code);
+  const member=people[0];
+  const subtitle=people.length?people.map(m=>m.codename).join(' · '):'Vago';
+  const display=subtitle.length>26?subtitle.slice(0,25)+'…':subtitle;
+  const title=role.label.length>22?role.label.slice(0,21)+'…':role.label;
+  const avatar=member?.avatarData&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(member.avatarData)?
+   '<image href="'+e(member.avatarData)+'" x="'+(x-69)+'" y="'+(y-20)+'" width="28" height="28" clip-path="circle(14px at 14px 14px)"/>':
+   '<circle cx="'+(x-55)+'" cy="'+(y-6)+'" r="13" fill="#374653" stroke="#9baaba"/>';
+  return '<g class="org-graph-node" role="button" tabindex="0" data-org-role="'+e(code)+'" aria-label="Ver '+e(role.label)+'">'+
+   '<rect x="'+(x-90)+'" y="'+(y-34)+'" width="180" height="70" rx="7"/>'+
+   avatar+
+   '<text class="org-graph-title" x="'+(x-31)+'" y="'+(y-8)+'">'+e(title)+'</text>'+
+   '<text class="org-graph-person" x="'+(x-31)+'" y="'+(y+12)+'">'+e(display)+'</text>'+
+   '<text class="org-graph-percent" x="'+(x+68)+'" y="'+(y+28)+'" text-anchor="end">'+Number(role.access??25)+'%</text>'+
+   '</g>';
+ }).join('');
+ return '<section class="org-network"><div class="org-network-head"><div>'+
+  '<div class="org-kicker">CONEXÕES DA ORGANIZAÇÃO</div><h2>Infográfico da hierarquia</h2>'+
+  '<p>O mapa usa os cargos e integrantes cadastrados. Clique em um nó para visualizar seus integrantes.</p></div>'+
+  '<span>MAPA RP / AO VIVO</span></div>'+
+  '<div class="org-graph-scroll"><svg viewBox="0 0 900 '+h+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mapa visual de relações entre cargos e setores do MafiaCorp">'+
+  '<defs><linearGradient id="orgSilver" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#262f39"/><stop offset="1" stop-color="#10151b"/></linearGradient></defs>'+
+  paths+roleNodes+'</svg></div>'+
+  '<div class="org-graph-legend">Ligação hierárquica · Cada nó exibe o cargo e o codinome do ocupante · "Vago" indica cargo disponível</div></section>';
 }
 function hierarchyHtml(){
  return '<div class="org-map"><div class="org-top-label">COMANDO SUPERIOR</div>'+
@@ -57,8 +112,8 @@ function hierarchyHtml(){
   '<div class="org-arrow">↓</div>'+roleCard('gerente_geral','org-wide')+
   '<div class="org-arrow">↓</div><div class="org-grid two">'+roleCard('gerente_farm','org-farm')+roleCard('gerente_acao','org-action')+'</div>'+
   '<div class="org-grid two">'+roleCard('logistica')+roleCard('estrategista')+'</div>'+
-  '<div class="org-arrow">↓</div><div class="org-grid two">'+roleCard('elite')+roleCard('membro')+'</div></div>'+
-  '<div class="org-note">Os percentuais representam níveis de acesso configurados por cargo. Atribuição de cargo é feita pela Liderança no Painel ADM. O servidor verifica permissões das contas e das contribuições.</div>';
+  '<div class="org-arrow">↓</div><div class="org-grid two">'+roleCard('elite')+roleCard('membro')+'</div>'+customRoleCards()+'</div>'+
+  '<div class="org-note">Os percentuais representam níveis de acesso por cargo. A Liderança e a administração gerenciam cargos no Painel ADM. O servidor valida as permissões centrais.</div>'+hierarchyGraph();
 }
 function bar(num,total=100){const val=Math.max(0,Math.min(total,Number(num)||0));return '<div class="org-progress"><span style="width:'+Math.round(val/total*100)+'%"></span></div>';}
 function badge(text,cls=''){return '<span class="org-badge '+cls+'">'+e(text)+'</span>';}
@@ -74,12 +129,12 @@ function overall(){
  '</div>';
 }
 function membersHtml(){
- let members=payload.members||[];
- return '<section class="org-panel"><div class="org-panel-top"><h2>Integrantes e contribuições</h2><span>'+members.length+' perfis registrados</span></div>'+
+ let members=(payload.members||[]).filter(m=>!selectedRole||m.orgRole===selectedRole);
+ return '<section class="org-panel"><div class="org-panel-top"><h2>Integrantes e contribuições</h2><span>'+members.length+' perfis registrados'+(selectedRole?' · '+e(label(selectedRole)):'')+'</span></div>'+
  '<div class="org-member-grid">'+(members.length?members.map(m=>{
   const isMine=m.id===ctx.currentUser.id;
   const score=m.approved===null?'Privado':m.approved+'%';
-  return '<div class="org-member-card"><div class="org-member-title"><span class="org-avatar">'+e(m.codename.slice(0,2).toUpperCase())+'</span><span><b>'+e(m.codename)+'</b><small>'+e(m.name)+'</small></span></div>'+
+  return '<div class="org-member-card"><div class="org-member-title"><span class="org-avatar">'+(m.avatarData?'<img src="'+e(m.avatarData)+'" alt="Foto">':e(m.codename.slice(0,2).toUpperCase()))+'</span><span><b>'+e(m.codename)+'</b><small>'+e(m.name)+'</small></span></div>'+
    '<div class="org-member-role">'+e(label(m.orgRole))+'</div>'+
    '<div class="org-member-points"><strong>'+score+'</strong><span>'+(m.pending===null?'Contribuição pessoal':m.pending+'% pendente')+'</span></div>'+
    (m.approved!==null?bar(m.approved,20):'')+
@@ -171,6 +226,11 @@ async function perform(body){
  finally{setBusy(false);}
 }
 function wire(){
+ document.querySelectorAll('[data-org-role]').forEach(b=>{
+   const open=()=>ctx.navigate('roster',{orgRole:b.dataset.orgRole});
+   b.addEventListener('click',open);
+   b.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();open();}});
+ });
  document.querySelectorAll('[data-org-member]').forEach(b=>b.addEventListener('click',()=>ctx.navigate('contribuicoes',{memberId:b.dataset.orgMember})));
  const date=document.getElementById('org-date');
  if(date)date.addEventListener('change',()=>{selectedDate=date.value;update();});
@@ -211,7 +271,7 @@ function wire(){
  });
 }
 function render(view,context,params={}){
- ctx=context;mode=view;contextKey=view;payload=null;selectedDate='';selectedMember=String(params.memberId||'');
+ ctx=context;mode=view;contextKey=view;payload=null;selectedDate='';selectedMember=String(params.memberId||'');selectedRole=String(params.orgRole||'');
  const root=area();if(!root)return;
  const title=view==='hierarquia'?'Hierarquia da organização':view==='roster'?'Integrantes e resultados':'Metas e contribuições';
  const subtitle=view==='hierarquia'?'Cargos, atribuições e níveis de acesso por setor.':

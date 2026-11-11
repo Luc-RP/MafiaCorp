@@ -126,7 +126,7 @@ function roleForm(existing){
  '<label class="am-role-full">Responsabilidades<textarea name="summary" maxlength="500" rows="3">'+esc(role.summary)+'</textarea></label>'+
  '<div class="am-role-full"><strong>Seções permitidas</strong><div class="am-view-grid">'+checks+'</div></div>'+
  '<div class="am-role-full am-view-grid">'+
- ['canViewAll|Ver contribuições de todos','canReview|Aprovar contribuições','canManagePanel|Fechar painel coletivo','canSubmit|Entregar missões RP'].map(x=>{
+ ['canViewAll|Ver contribuições de todos','canManagePanel|Fechar painel coletivo','canSubmit|Entregar missões RP'].map(x=>{
  const [key,text]=x.split('|');return '<label class="am-view-check"><input type="checkbox" name="'+key+'" '+(role[key]?'checked':'')+'>'+text+'</label>';
  }).join('')+'</div>',
  async data=>{

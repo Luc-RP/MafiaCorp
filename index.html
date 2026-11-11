@@ -1056,8 +1056,8 @@ function schemaFor(type){
         {key:'description', label:'Descrição', type:'textarea'},
         {key:'suspectId', label:'Investigado Relacionado', type:'ref', ref:'suspects'},
         {key:'investigationId', label:'Investigação Relacionada', type:'ref', ref:'investigations'},
-        {key:'latitude', label:'Latitude', type:'text'},
-        {key:'longitude', label:'Longitude', type:'text'},
+        {key:'longitude', label:'Coordenada X (GTA V)', type:'text'},
+        {key:'latitude', label:'Coordenada Y (GTA V)', type:'text'},
         {key:'notes', label:'Observações', type:'textarea'},
       ],
       listColumns:[
@@ -1873,7 +1873,10 @@ function openModal(html){
   document.getElementById('modal').innerHTML = html;
   document.getElementById('modal-overlay').style.display = 'flex';
 }
-function closeModal(){ document.getElementById('modal-overlay').style.display = 'none'; }
+function closeModal(){
+  if(ADDR_MAP_INSTANCE){ADDR_MAP_INSTANCE.remove();ADDR_MAP_INSTANCE=null;ADDR_MAP_MARKER=null;}
+  document.getElementById('modal-overlay').style.display = 'none';
+}
 
 /* ============ ATTACHMENTS (photos/videos/docs) ============ */
 const ATTACHABLE_TYPES = ['suspects','vehicles','addresses','evidence','associates','factions'];
@@ -2067,55 +2070,90 @@ async function loadAttachmentThumb(el){
   }catch(e){console.warn(e);el.innerHTML='<div class="att-loading">ANEXO INDISPONÍVEL</div>';}
 }
 
-/* ============ ADDRESS MAP (Leaflet / OpenStreetMap — sem chave de API) ============ */
+/* ============ ADDRESS MAP: LOS SANTOS / GTA V / FiveM ============ */
 let ADDR_MAP_INSTANCE = null;
 let ADDR_MAP_MARKER = null;
-function initAddressMap(lat, lng){
+let ADDR_MAP_EDITED = false;
+function initAddressMap(lat, lng, coordinateSystem, readOnly){
   const el = document.getElementById('addr-map');
-  if(!el || typeof L === 'undefined') return;
-  if(ADDR_MAP_INSTANCE){ ADDR_MAP_INSTANCE.remove(); ADDR_MAP_INSTANCE = null; ADDR_MAP_MARKER = null; }
-  const hasCoords = lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng));
-  const startLat = hasCoords ? parseFloat(lat) : -14.235;
-  const startLng = hasCoords ? parseFloat(lng) : -51.9253;
-  const startZoom = hasCoords ? 15 : 4;
-  const map = L.map(el, { attributionControl: true }).setView([startLat, startLng], startZoom);
-  ADDR_MAP_INSTANCE = map;
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
-  }).addTo(map);
-  function setLatLngFields(latVal, lngVal){
-    const latField = document.querySelector('#form-fields [data-field="latitude"]');
-    const lngField = document.querySelector('#form-fields [data-field="longitude"]');
-    if(latField) latField.value = latVal.toFixed(6);
-    if(lngField) lngField.value = lngVal.toFixed(6);
+  if(!el) return;
+  if(ADDR_MAP_INSTANCE){
+    ADDR_MAP_INSTANCE.remove();
+    ADDR_MAP_INSTANCE = null;
+    ADDR_MAP_MARKER = null;
   }
-  function placeMarker(latlng){
-    if(ADDR_MAP_MARKER) ADDR_MAP_MARKER.setLatLng(latlng);
-    else ADDR_MAP_MARKER = L.marker(latlng, { draggable: true }).addTo(map).on('dragend', ()=>{
-      const p = ADDR_MAP_MARKER.getLatLng();
-      setLatLngFields(p.lat, p.lng);
-    });
-    setLatLngFields(latlng.lat, latlng.lng);
+  ADDR_MAP_EDITED = false;
+  if(typeof L === 'undefined'){
+    el.textContent = 'Mapa de Los Santos indisponível. Confira sua conexão e recarregue a página.';
+    return;
   }
-  if(hasCoords) placeMarker({lat:startLat, lng:startLng});
-  map.on('click', (e)=>placeMarker(e.latlng));
-  setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 150);
-  const geoBtn = document.querySelector('[data-geo-locate]');
-  if(geoBtn) geoBtn.addEventListener('click', ()=>{
-    if(!navigator.geolocation){ toast('Geolocalização não suportada neste navegador.', true); return; }
-    geoBtn.disabled = true; const old = geoBtn.textContent; geoBtn.textContent = 'LOCALIZANDO...';
-    navigator.geolocation.getCurrentPosition(
-      (pos)=>{
-        const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        map.setView(latlng, 16);
-        placeMarker(latlng);
-        geoBtn.disabled = false; geoBtn.textContent = old;
-      },
-      (err)=>{ console.error(err); toast('Não foi possível obter sua localização atual.', true); geoBtn.disabled = false; geoBtn.textContent = old; },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+  // O mapa do GTA V usa coordenadas X/Y planas, não latitude/longitude reais.
+  // Calibração igual à seção "Mapa de Los Santos" do MafiaCorp.
+  const crs = L.extend({}, L.CRS.Simple, {
+    projection: L.Projection.LonLat,
+    scale: z=>Math.pow(2,z),
+    zoom: scale=>Math.log(scale)/Math.LN2,
+    transformation: new L.Transformation(.02072,117.3,-.0205,172.8),
+    infinite: true
   });
+  const map = L.map(el,{crs,zoomControl:true,minZoom:2,maxZoom:6,preferCanvas:true,attributionControl:true});
+  ADDR_MAP_INSTANCE = map;
+  const bounds = L.latLngBounds(map.unproject([0,8192],5),map.unproject([8192,0],5));
+  const tiles = {tileSize:256,minZoom:0,maxZoom:6,maxNativeZoom:5,bounds,
+    attribution:'Mapa © Rockstar Games · tiles FiveDock'};
+  let layer = L.tileLayer('https://assets.fivedock.dev/maps/styleatlas/{z}/{x}/{y}.jpg',tiles).addTo(map);
+  let failures=0,switched=false;
+  layer.on('tileerror',()=>{
+    if(++failures<3||switched)return;
+    switched=true;
+    map.removeLayer(layer);
+    layer=L.tileLayer('https://cdn.fivedock.dev/o/fivedock/maps/styleatlas/{z}/{x}/{y}.jpg',tiles).addTo(map);
+  });
+  map.setMaxBounds(bounds.pad(.12));
+  map.setView([0,0],3);
+
+  const yField=document.querySelector('#form-fields [data-field="latitude"]');
+  const xField=document.querySelector('#form-fields [data-field="longitude"]');
+  const info=document.querySelector('[data-map-position]');
+  function setXY(latVal,lngVal){
+    if(yField)yField.value=latVal.toFixed(2);
+    if(xField)xField.value=lngVal.toFixed(2);
+    if(info)info.textContent='Marcador em Los Santos · X: '+lngVal.toFixed(2)+' · Y: '+latVal.toFixed(2);
+  }
+  function placeMarker(pos,edited){
+    if(!Number.isFinite(pos.lat)||!Number.isFinite(pos.lng))return;
+    if(ADDR_MAP_MARKER)ADDR_MAP_MARKER.setLatLng(pos);
+    else ADDR_MAP_MARKER=L.marker(pos,{draggable:!readOnly,title:'Local em Los Santos'}).addTo(map).on('dragend',()=>{
+      const moved=ADDR_MAP_MARKER.getLatLng();
+      setXY(moved.lat,moved.lng);
+      ADDR_MAP_EDITED=true;
+    });
+    setXY(pos.lat,pos.lng);
+    if(edited)ADDR_MAP_EDITED=true;
+  }
+
+  const isValid=coordinateSystem==='gta-v'&&lat!==''&&lng!==''&&lat!=null&&lng!=null&&
+    Number.isFinite(Number(lat))&&Number.isFinite(Number(lng));
+  if(isValid){
+    const pos={lat:Number(lat),lng:Number(lng)};
+    placeMarker(pos,false);
+    map.setView(pos,4);
+  }else if(info&&lat!==''&&lng!==''&&lat!=null&&lng!=null){
+    info.textContent='Local antigo: coordenadas do mapa real preservadas. Clique em Los Santos para definir uma nova posição no GTA V.';
+  }
+  if(!readOnly){
+    map.on('click',event=>placeMarker(event.latlng,true));
+    const syncFields=()=>{
+      if(!xField||!yField)return;
+      const x=Number(xField.value.trim()),y=Number(yField.value.trim());
+      if(!xField.value.trim()||!yField.value.trim()||!Number.isFinite(x)||!Number.isFinite(y))return;
+      placeMarker({lat:y,lng:x},true);
+      map.setView([y,x],4);
+    };
+    if(xField)xField.addEventListener('change',syncFields);
+    if(yField)yField.addEventListener('change',syncFields);
+  }
+  setTimeout(()=>{if(ADDR_MAP_INSTANCE===map)map.invalidateSize();},150);
 }
 
 function renderFactionMembersPanel(factionId){
@@ -2218,12 +2256,10 @@ function openEntityForm(type, id, readOnlyHint, presetValues){
       ${readOnly?'<div class="perm-note">Visualização — seu nível de acesso não permite edição.</div>':''}
       <div class="grid2" id="form-fields">${schema.fields.map(f=>fieldHtml(f, values[f.key])).join('')}</div>
       ${type==='addresses' ? `
-        <div class="eyebrow" style="margin-top:14px;margin-bottom:6px;">LOCALIZAÇÃO NO MAPA</div>
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <button type="button" class="btn btn-sm" data-geo-locate>📍 Usar minha localização atual</button>
-          <span class="eyebrow" style="align-self:center;">Ou clique/arraste o marcador no mapa</span>
-        </div>
-        <div id="addr-map" style="height:260px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);"></div>
+        <div class="eyebrow" style="margin-top:14px;margin-bottom:6px;">LOCALIZAÇÃO EM LOS SANTOS · GTA V / FiveM</div>
+        <div class="eyebrow" style="margin-bottom:8px;line-height:1.6;">Clique no mapa para adicionar o marcador ou arraste-o para ajustar. Use coordenadas X/Y do jogo, não GPS real.</div>
+        <div id="addr-map" style="height:310px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);"></div>
+        <div class="eyebrow" data-map-position style="margin-top:8px;line-height:1.6;">Clique em um ponto de Los Santos para marcar a posição do local.</div>
       `:''}
       ${!isNew && type==='evidence' ? `<div class="eyebrow" style="margin-top:6px">ID: ${esc(record.evdId)}</div>`:''}
       ${!isNew && type==='factions' ? renderFactionMembersPanel(record.id) : ''}
@@ -2236,13 +2272,14 @@ function openEntityForm(type, id, readOnlyHint, presetValues){
     </div>
   `);
   document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeModal));
-  if(type==='addresses') initAddressMap(values.latitude, values.longitude);
+  if(type==='addresses') initAddressMap(values.latitude, values.longitude, values.coordinateSystem, readOnly);
   if(!isNew && type==='factions') wireFactionMembersPanel(document.getElementById('modal'), record.id);
   if(!isNew && ATTACHABLE_TYPES.includes(type)) wireAttachmentsPanel(document.getElementById('modal'));
   const saveBtn = document.querySelector('[data-save]');
   if(saveBtn) saveBtn.addEventListener('click', async ()=>{
     const data = {};
     document.querySelectorAll('#form-fields [data-field]').forEach(el=>{ data[el.dataset.field] = el.value; });
+    if(type==='addresses' && (isNew || ADDR_MAP_EDITED || values.coordinateSystem==='gta-v')) data.coordinateSystem='gta-v';
     const requiredMissing = schema.fields.filter(f=>f.required && !data[f.key]);
     if(requiredMissing.length){ toast('Preencha os campos obrigatórios: '+requiredMissing.map(f=>f.label).join(', '), true); return; }
     if(isNew){

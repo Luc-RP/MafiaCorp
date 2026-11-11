@@ -1,5 +1,17 @@
 # MafiaCorp | Central da Família (FiveM / GTA RP)
 
+## Administrador independente da hierarquia
+
+Em 10/11/2026, por decisão expressa do responsável, a conta central `Luc` foi alterada de `lider_01` para `admin_sistema`, preservando o papel técnico `admin`, a senha e a sessão.
+
+- **Administrador do Sistema:** 100% de acesso à administração e às seções, mas **sem posto na hierarquia RP**.
+- **Liderança 01:** está disponível para atribuição a outro integrante.
+- **Meta e atividade diária:** a conta administrativa fica isenta; o backend não aceita submissão de missões RP pela conta `admin_sistema`.
+- **Organograma e lista de integrantes:** contas com cargo `admin_sistema` ficam excluídas do resultado de integrantes RP, mas continuam aparecendo no Painel ADM.
+- **Segurança:** a conta administrativa do sistema não pode ser bloqueada, excluída nem receber outro cargo pela API administrativa comum. Novos cadastros não podem obter `admin_sistema`.
+- **Migração aplicada:** `database/004_system_admin.sql` ajustou a constraint de cargos, e o `UPDATE` específico da conta Luc foi aplicado separadamente e confirmado via consulta SQL.
+- **Homologação:** banco confirmou uma conta `Luc` com `role=admin` e `org_role=admin_sistema`, e zero contas no cargo `lider_01`. Verificação de permissões do backend e sintaxe do frontend passou. A aparência final deve ser validada no navegador após atualização.
+
 ## Cargos e metas do QG (gate de 10/11/2026)
 
 **Fonte:** estrutura organizacional e regras fornecidas diretamente pelo responsável pelo MafiaCorp. A aplicação é um recurso de gerenciamento de personagens de FiveM RP.
